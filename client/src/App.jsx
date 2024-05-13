@@ -1,34 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  // this is for the 
+  const [ingredients, setIngredients] = useState([""]);
+  const [meal, setMealData] = useState('');
+
+  function handleChange(e) {
+    setIngredients(e.target.value);
+  };
+
+  useEffect(() => {
+    fetch('https://api.spoonacular.com/recipes/findByIngredients?apiKey=c5a76b2747564a09b63ee79f924ba472&ingredients=tomato,+potato')
+  //then check if my fetch worked 
+  .then(response => response.json())
+  .then(response => setIngredients(response))
+  .catch(error => 
+    console.error(error));
+//dependencies, run this code when i start the app
+  }, []);
+
+
+  // this is the API
+// const api_key = "c5a76b2747564a09b63ee79f924ba472"
+  // const options = {
+  //   method: 'GET',
+  //   headers: {
+  //      accept: 'application/json',
+  //      'X-RapidAPI-Key': 'c5a76b2747564a09b63ee79f924ba472',
+	// 	   'X-RapidAPI-Host': 'spoonacular-recipe-food-nutrition-v1.p.rapidapi.com'
+  //   }
+  // };
+  
+  // fetch me the ingredients data 
+
+
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <h1> Plan your Meal! </h1>
+    <form>
+    <input type="text" placeholder = "Enter your ingredients" value = {ingredients} onChange = {handleChange} /> 
+    <button onClick = {handleSubmit}> Add </button>
+    </form>
+    
     </>
+    
   )
 }
 
