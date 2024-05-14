@@ -55,10 +55,10 @@ const getRecipes = () => {
 
   return (
     <>
-    <h1> Plan your Meal! </h1>
+    <h2> Plan your Meal </h2>
     <form>
-    <input type="text" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
-    <button onClick={(addNewIngredients)}> Add </button>
+    <input type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
+    <button onClick={(addNewIngredients)} className= "button"> Add </button>
     </form>
     <div>
       <ul>
@@ -71,16 +71,16 @@ const getRecipes = () => {
           </ul>
         ))}
       </ul>
-      <button onClick = {handleSubmit}> Find Recipes</button>
+      <button onClick = {handleSubmit} className= "button" > Find Recipes</button>
+      <div className= "recipe-container"> 
       {recipes.map ((recipe, index) => (
         <ul
           key = {index}> 
           <h4> {recipe.title} </h4>
-          <img src = {recipe.image}  />
+          <img src = {recipe.image} className= 'image-list' />
         </ul>
-      
      ))}
-
+      </div>
     </div>
     
     </>
