@@ -22,7 +22,7 @@ function App() {
 
 // create a function when we press find recipes button 
   function handleSubmit() {
-    getRecipes(setRecipes);
+    getRecipes();
     console.log("Ingredients are submitted")
   };
 
@@ -40,12 +40,11 @@ function App() {
     setAddedIngredients(updatedIngredients);
   }
 
-
    //fetch('https://api.spoonacular.com/recipes/findByIngredients?apiKey=c5a76b2747564a09b63ee79f924ba472&ingredients=tomato,+potato')
 //   //then check if my fetch worked 
 
 const getRecipes = () => {
- fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${recipes}`)
+ fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${addedIngredients.join(",")}`)
   .then(response => response.json())
   .then(response => setRecipes(response))
   .catch(error => 
@@ -73,6 +72,15 @@ const getRecipes = () => {
         ))}
       </ul>
       <button onClick = {handleSubmit}> Find Recipes</button>
+      {recipes.map ((recipe, index) => (
+        <ul
+          key = {index}> 
+          <h4> {recipe.title} </h4>
+          <img src = {recipe.image}  />
+        </ul>
+      
+     ))}
+
     </div>
     
     </>
