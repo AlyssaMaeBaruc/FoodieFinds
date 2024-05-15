@@ -84,7 +84,7 @@ const getRecipes = () => {
 
   return (
     <>
-    <h2> Plan your Meal! </h2>
+    <h2> Find Meals With Your Ingredients </h2>
     <form>
     <input type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
     <button onClick={(addNewIngredients)} className= "button"> Add </button>

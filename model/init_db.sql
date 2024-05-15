@@ -3,16 +3,15 @@
 --
 
 SET foreign_key_checks = 0;
-DROP TABLE if exists students;
+DROP TABLE if exists saved_meals;
 SET foreign_key_checks = 1;
 
 --
 -- Create Tables
 --
 
-CREATE TABLE students(
-    id INT NOT NULL AUTO_INCREMENT, 
-    firstname VARCHAR(40) not null, 
-    lastname VARCHAR(40) not null, 
-    PRIMARY KEY (id)
+CREATE TABLE saved_meals (
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    title VARCHAR(40) not null, 
+    image VARCHAR(255) not null
     );
