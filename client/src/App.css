@@ -63,3 +63,7 @@ body {
   align-content: center;
 }
 
+.error-message {
+  font-style: inherit;
+  color: red;
+}
