@@ -7,21 +7,27 @@ router.get('/', function(req, res, next) {
 });
 
 // POST a new recipe 
-router.post('/', function (req, res, next) {
+router.post('/', async function (req, res, next) {
   // as of now i have a title colum, this could be located in the body 
+
+  try {
+    
 const { title, image } = req.body; 
 
-const sql = `INSERT INTO saved_meals (title, image) VALUES ( ${title}, ${image})`
+const insertRecipe = `INSERT INTO saved_meals (title, image) VALUES ( ${title}, ${image})`
+const select = `SELECT * FROM students;`;
+
+await db (insertRecipe);
+const result = await db (select);
+res.send(result.data);
+} catch (err) {
+  console.log("Error on saving recipe")
+}
 
 
-  const newSavedRecipe = {
-    id: newSavedRecipeId,
-    ...req.body,
-  };
-  newSavedRecipeId++;
-
-  DataTransfer.push(newSavedRecipe);
-  res.status(201).send(data);
 });
+
+
+ 
 
 module.exports = router;
