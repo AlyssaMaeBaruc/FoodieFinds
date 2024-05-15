@@ -56,15 +56,16 @@ const getRecipes = () => {
     }
     return response.json();
   })
-  // this is if the user places something that the database can not read
+  // placed an error for cases where the response could not be read or does not match the expected 
   .then((response) => {
-    if (!response.isArray) {
-      throw new Error ("Invalid ingredient")
-    }
-    //there is no error at this point and can be set to  null 
+    console.log(response);
+    if (!Array.isArray(response) || response.length === 0) {
+      throw new Error("Invalid Ingredient"); 
+};
+// else if it contains data that can be read then clear the error 
   setRecipes(response);
   setError(null);
-})
+  })
   .catch((error) => {
     setError(error.message);
     console.error(error);
@@ -83,7 +84,7 @@ const getRecipes = () => {
 
   return (
     <>
-    <h2> What is in your Fridge? </h2>
+    <h2> Plan your Meal! </h2>
     <form>
     <input type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
     <button onClick={(addNewIngredients)} className= "button"> Add </button>
