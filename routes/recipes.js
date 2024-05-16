@@ -19,7 +19,7 @@ const { title, image } = req.body;
 const insertSavedRecipe = `INSERT INTO saved_meals (title, image) VALUES ("${title}", "${image}");`
 
 await db (insertSavedRecipe);
-res.status(200).send('Meal have been saved');
+res.status(200).send({message: 'Meal have been saved'});
 } catch (err) {
 console.error('Error on saving recipe', err);
   res.status(500).send(err);
