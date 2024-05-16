@@ -1,10 +1,12 @@
 var express = require('express');
 var router = express.Router();
+const db = require('../model/helper');
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
+
+// /* GET users listing. */
+// router.get('/', function(req, res, next) {
+//   res.send('respond with a resource');
+// });
 
 // POST a new recipe 
 router.post('/', async function (req, res, next) {
@@ -14,20 +16,27 @@ router.post('/', async function (req, res, next) {
     
 const { title, image } = req.body; 
 
-const insertRecipe = `INSERT INTO saved_meals (title, image) VALUES ( ${title}, ${image})`
-const select = `SELECT * FROM students;`;
+const insertSavedRecipe = `INSERT INTO saved_meals (title, image) VALUES ("${title}", "${image}");`
 
-await db (insertRecipe);
-const result = await db (select);
-res.send(result.data);
+await db (insertSavedRecipe);
+res.status(200).send('Meal have been saved');
 } catch (err) {
-  console.log("Error on saving recipe")
-}
-
-
+console.error('Error on saving recipe', err);
+  res.status(500).send(err);
+ }
 });
 
 
+// GET ALL THE FAVOURITED OR SAVED MEALS 
+
+router.get("/", function(req, res, next) {
+
+  db("SELECT * FROM saved_meals;")
+    .then((results) => {
+      res.send(results.data);
+    })
+    .catch((err) => res.status(500).send(err));
+});
  
 
 module.exports = router;

@@ -67,3 +67,10 @@ body {
   font-style: inherit;
   color: red;
 }
+
+.save-button {
+  font-size: 15px;
+  margin: 4px 2px;
+  padding: 5px 20px;
+
+}

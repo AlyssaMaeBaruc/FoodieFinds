@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import './App.css'
+import {  Routes , Route } from "react-router-dom";
+import { Link } from 'react-router-dom';
+import FavouriteMeals from "../pages/FavouriteMeals";
 
 function App() {
 
@@ -18,12 +21,12 @@ function App() {
   //for error 
   const [error,setError] = useState(null);
 
-
+// input type bar to handle change when the add button is clicked 
   function handleChange(e) {
     setIngredientsInput(e.target.value);
   };
 
-// create a function when we press find recipes button 
+// create a function when we press find recipes button
   function handleSubmit() {
     getRecipes();
     console.log("Ingredients are submitted")
@@ -43,12 +46,31 @@ function App() {
     setAddedIngredients(updatedIngredients);
   }
 
+  // function for the favourite button, it expects to receive the title and image when called 
+  const saveMeal = (title , image) => {
+    fetch ("/api/recipes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify ({title, image})
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error ("Failed to save meal");
+      }
+      // or else i want something to appear to know that it is saved 
+      alert("Saved!")
+    })
+    .catch((error) => {
+      setError(error.message);
+      console.error(error);
+    });
+  }
 
-   //fetch('https://api.spoonacular.com/recipes/findByIngredients?apiKey=c5a76b2747564a09b63ee79f924ba472&ingredients=tomato,+potato')
-//   //then check if my fetch worked 
-
-const getRecipes = () => {
- fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${addedIngredients.join(",")}`)
+// function for the find recipes submit button
+  const getRecipes = () => {
+   fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${addedIngredients.join(",")}`)
   .then((response) => {
     // this is if there is something wrong with the database 
     if(!response.ok) {
@@ -73,18 +95,22 @@ const getRecipes = () => {
 
 };
 
-  // const getRecipes = () => {
-  //   fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${addedIngredients.join(",")}`)
-  // // .then(response => response.json())
-  // // .then(response => setRecipes(response))
-  // // .catch(error => 
-  // //   console.error(error));
-  // // }
-
 
   return (
     <>
-    <h2> Find Meals With Your Ingredients </h2>
+    <nav> 
+      <ul>
+        <li>
+          <Link to ="/"> My Saved Meals </Link>
+        </li>
+      </ul>
+    </nav>
+    {/* creating another page called My Saved Meals */}
+    <Routes> 
+      <Route path = "/" element = {<FavouriteMeals />} />
+      
+     </Routes>
+    <h2> Find Meals With Your Ingredients 🍽️ </h2>
     <form>
     <input type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
     <button onClick={(addNewIngredients)} className= "button"> Add </button>
@@ -96,11 +122,11 @@ const getRecipes = () => {
             key = {index}> {ingredient}
             <button 
             className = "delete-button" 
-            onClick = {() => deleteIngredients(index)}> x </button> 
+            onClick = {() => deleteIngredients(index)}> ✖️ </button> 
           </ul>
         ))}
       </ul>
-      <button onClick = {handleSubmit} className= "button" > Find Recipes</button>
+      <button onClick = {handleSubmit} className= "button" > 🔎 Find Recipes</button>
       <div className= "error-message"> {error &&  
         <h2> ERROR 404 : {error} </h2> } </div>     
       <div className= "recipe-container"> 
@@ -108,8 +134,11 @@ const getRecipes = () => {
         <ul key = {index}> 
           <h4> {recipe.title} </h4>
           <img src = {recipe.image} className= 'image-list' />
+          {/* adding a button for every meal that appears  */}
+          <button className = "save-button" onClick ={() => saveMeal(recipe.title, recipe.image)} > ❤️ Favourite </button>
         </ul>
      ))}
+     
       </div>
     </div>
     
