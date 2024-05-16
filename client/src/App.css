@@ -1,7 +1,5 @@
 #root {
-  max-width: 1280px;
   margin: 0 auto;
-  padding: 3rem;
   text-align: center;
 }
 
@@ -37,6 +35,14 @@
   margin: 4px 2px;
   transition-duration: 0.4s;
   cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.25s;
 }
 
 .delete-button {
@@ -72,5 +78,13 @@ body {
   font-size: 15px;
   margin: 4px 2px;
   padding: 5px 20px;
+
+}
+
+img.image-list {
+  margin: 18%;
+  object-position: 15% 100%;
+  display:inline-block;
+  border: 1px solid beige;
 
 }

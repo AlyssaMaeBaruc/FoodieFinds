@@ -1,0 +1,46 @@
+nav {
+    width: 500%;
+    justify-content: space-between;
+    align-items: center;
+    background-color: antiquewhite;
+    border: 100%;
+
+}
+
+nav.title {
+    font-size: 3%;
+    margin: 100%;
+    font-weight: bold;
+    color: white;
+}
+
+nav ul {
+ display: flex;
+}
+
+li a {
+    display: block;
+    width: 200px;
+  }
+
+  ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 200px;
+  }
+
+  nav ul li a {
+    display:block;
+    padding: 20%;
+
+  }
+
+  li a:hover {
+    color: white;
+  }
+
+  a.saved {
+    font-size: large;
+
+  }

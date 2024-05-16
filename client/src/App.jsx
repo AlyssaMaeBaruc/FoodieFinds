@@ -4,21 +4,14 @@ import {  Routes , Route } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import FavouriteMeals from "./pages/FavouriteMeals";
 import Homepage from "./pages/Homepage";
+import { Navbar } from './components/Navbar';
 
 function App () {
 
+
   return (
     <>
-    <nav> 
-      <ul>
-      <li>
-          <Link to ="/">Home </Link>
-        </li>
-        <li>
-          <Link to ="/favourites"> My Saved Meals </Link>
-        </li>
-      </ul>
-    </nav>
+    <Navbar/>
     {/* creating another page called My Saved Meals */}
     <Routes> 
       <Route path = "/favourites" element = {<FavouriteMeals />} />
