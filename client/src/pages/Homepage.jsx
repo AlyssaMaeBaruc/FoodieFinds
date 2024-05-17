@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+
 function Homepage() {
 
   const apiUrl = "https://api.spoonacular.com/recipes/findByIngredients";
@@ -113,18 +114,18 @@ function Homepage() {
       <button onClick = {handleSubmit} className= "button" > 🔎 Find Recipes</button>
       <div className= "error-message"> {error &&  
         <h2> ERROR 404 : {error} </h2> } </div>     
-      <div className= "recipe-container"> 
-      {recipes.map ((recipe, index) => (
-        <ul key = {index}> 
-          <h4> {recipe.title} </h4>
-          <img src = {recipe.image} className= 'image-list' />
-          {/* adding a button for every meal that appears  */}
-          <button className = "save-button" onClick ={() => saveMeal(recipe.title, recipe.image)} > ❤️ Favourite </button>
-        </ul>
-     ))}
-     
-      </div>
+      <ul >
+    {recipes.map((recipe, index) => (
+      <li key={index}> 
+        <h4>{recipe.title}</h4>
+        <img src={recipe.image} className='image-list' alt={recipe.title} />
+        {/* adding a button for every meal that appears  */}
+        <button className="save-button" onClick={() => saveMeal(recipe.title, recipe.image)}>❤️ Favourite</button>
+      </li>
+    ))}
+     </ul>
     </div>
+
     
     </>
     

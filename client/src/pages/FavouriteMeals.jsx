@@ -6,20 +6,6 @@ function FavouriteMeals() {
 
     const [mealList, setMealList] = useState([]);
 
-// const listOfSavedMeals = () => {
-//     fetch ("/api/recipes")
-//     .then(response => {
-//         if (!response.ok) {
-//           throw new Error({message: "Failed"});
-//         }
-//         return response.json();
-//       })
-//       .catch(error => {
-//         console.error({message: "Error found:", error});
-//         throw error; // show it to the user 
-//       });
-//   };
-
   const listOfSavedMeals = () => {
 fetch("/api/recipes")
   .then((res) => res.json())
@@ -40,23 +26,20 @@ fetch("/api/recipes")
 
 
 
-    return (
-    <>
-   <div classname = "container"> </div>
-    {mealList.map (( meal,index) => (
-    <ul key = {index}> 
-    <div> 
-      <h3> {meal.title} </h3> 
-      </div>
-     <img src = {meal.image}  />
-    
-    </ul>
-    ))}
-
+      return (
+        <>
+          <div >
+            {mealList.map((meal, index) => (
+              <div className="container" key={index}>
+                <h3>{meal.title}</h3>
+                  <li >
+                    <img src={meal.image} alt={meal.title} />
+                  </li>
+              </div>
+            ))}
+          </div>
+        </>
+      );
+    }
       
-    </>
-
-    )
-}
-
 export default FavouriteMeals

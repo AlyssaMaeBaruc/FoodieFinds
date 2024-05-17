@@ -22,13 +22,13 @@ li a {
     width: 200px;
   }
 
-  ul {
+.navbar-list {
     list-style-type: none;
     margin: 0;
     padding: 0;
-    display: inline-table;
-    background-color: rgb(252, 252, 252);
+    background-color: whitesmoke;
 }
+
   nav ul li a {
     display:block;
     padding: 20%;
@@ -48,3 +48,8 @@ li a {
     font-size: large;
   }
 
+.navbar-item {
+ box-shadow: none; 
+ background-color: whitesmoke;
+
+}
