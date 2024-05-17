@@ -2,8 +2,7 @@ nav {
     width: 500%;
     justify-content: space-between;
     align-items: center;
-    background-color: antiquewhite;
-    border: 100%;
+    border: 100%;     
 
 }
 
@@ -27,7 +26,8 @@ li a {
     list-style-type: none;
     margin: 0;
     padding: 0;
-    width: 200px;
+    display: inline-table;
+   
   }
 
   nav ul li a {
@@ -48,3 +48,4 @@ li a {
   a {
     font-size: large;
   }
+

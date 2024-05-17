@@ -42,10 +42,12 @@ fetch("/api/recipes")
 
     return (
     <>
-    My Saved Meals
-
+   <div classname = "container"> </div>
     {mealList.map (( meal,index) => (
-    <ul key = {index}> {meal.title} 
+    <ul key = {index}> 
+    <div> 
+      <h3> {meal.title} </h3> 
+      </div>
      <img src = {meal.image}  />
     
     </ul>

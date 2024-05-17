@@ -54,11 +54,12 @@
 
 body {
   font-size: medium;
+  background-image: url(https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D);
 }
 
 
 .image-list {
-  border-radius: 8px;
+  border-radius: 3px;
   width: 15em;
   display: flex;
 }
@@ -67,6 +68,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-content: center;
+  background-color: #f2f0e9;
+  opacity: 0.9;
 }
 
 .error-message {
@@ -84,7 +87,26 @@ body {
 img.image-list {
   margin: 18%;
   object-position: 15% 100%;
-  display:inline-block;
+  display: inline-grid;
   border: 1px solid beige;
+  padding: none;
 
+}
+
+h2 {
+  font-style: inherit;
+  color: #3d3204;
+  background-color: white;
+  font-size: xx-large;
+  
+}
+
+h4 {
+  font-size: larger;
+}
+
+h3 {
+  background-color: white;
+  padding: 1%;;
+  display: inline-block;
 }
