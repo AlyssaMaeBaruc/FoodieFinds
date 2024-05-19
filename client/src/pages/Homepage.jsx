@@ -97,7 +97,7 @@ function Homepage() {
   return (
     <> 
     <p> Welcome to FoodieFinds, your ultimate destination for culinary inspiration! 
-      Explore a world of delightful meal ideas and culinary inspiration, all tailored to your pantry's ingredients.</p>
+      Explore a world of delightful meal ideas, all tailored to your pantry's ingredients.</p>
     <h2> Find Meals With Your Ingredients 🍽️ </h2>
   
     <form>
