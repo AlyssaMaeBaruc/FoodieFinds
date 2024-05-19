@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import RecipesList from '../components/RecipesList'; // Adjust the import path based on your project structure
+
 
 
 function Homepage() {
@@ -44,25 +46,24 @@ function Homepage() {
   }
 
   // function for the favourite button, it expects to receive the title and image when called 
-  const saveMeal = (title , image) => {
-    fetch ("/api/recipes", {
+  const saveMeal = (title, image) => {
+    fetch("/api/recipes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify ({title, image})
+      body: JSON.stringify({ title, image })
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error ("Failed to save meal");
-      }
-      // or else i want something to appear to know that it is saved 
-      alert("Saved!")
-    })
-    .catch((error) => {
-      setError(error.message);
-      console.error(error);
-    });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to save meal");
+        }
+        alert("Saved Meal!");
+      })
+      .catch((error) => {
+        setError(error.message);
+        console.error(error);
+      });
   }
 
 // function for the find recipes submit button
@@ -95,7 +96,10 @@ function Homepage() {
 
   return (
     <> 
+    <p> Welcome to FoodieFinds, your ultimate destination for culinary inspiration! 
+      Explore a world of delightful meal ideas and culinary inspiration, all tailored to your pantry's ingredients.</p>
     <h2> Find Meals With Your Ingredients 🍽️ </h2>
+  
     <form>
     <input name="text" type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
     <button onClick={(addNewIngredients)} className= "button"> Add </button>
@@ -113,17 +117,10 @@ function Homepage() {
       </ul>
       <button onClick = {handleSubmit} className= "button" > 🔎 Find Recipes</button>
       <div className= "error-message"> {error &&  
-        <h2> ERROR 404 : {error} </h2> } </div>     
-      <ul >
-    {recipes.map((recipe, index) => (
-      <li key={index}> 
-        <h4>{recipe.title}</h4>
-        <img src={recipe.image} className='image-list' alt={recipe.title} />
-        {/* adding a button for every meal that appears  */}
-        <button className="save-button" onClick={() => saveMeal(recipe.title, recipe.image)}>❤️ Favourite</button>
-      </li>
-    ))}
-     </ul>
+        <h2> ERROR 404 : {error} </h2> }  </div>     
+ 
+     <RecipesList recipes ={recipes} saveMeal={saveMeal} showSaveButton={true}/>
+
     </div>
 
     

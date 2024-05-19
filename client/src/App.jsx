@@ -2,7 +2,9 @@ import './App.css'
 import {  Routes , Route } from "react-router-dom";
 import FavouriteMeals from "./pages/FavouriteMeals";
 import Homepage from "./pages/Homepage";
-import { Navbar } from './components/Navbar';
+import { Navbar } from "./components/Navbar";
+import RecipesList from './components/RecipesList';
+
 
 function App () {
 
@@ -15,6 +17,8 @@ function App () {
       <Route path = "/favourites" element = {<FavouriteMeals />} />
       <Route path = "/" element = {<Homepage />} />
      </Routes>
+     <RecipesList />
+
    
     
     </>

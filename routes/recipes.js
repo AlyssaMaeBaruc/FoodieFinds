@@ -29,7 +29,7 @@ console.error('Error on saving recipe', err);
 
 // GET ALL THE FAVOURITED OR SAVED MEALS 
 
-router.get("/", function(req, res, next) {
+router.get("/", async function(req, res, next) {
 
   db("SELECT * FROM saved_meals;")
     .then((results) => {
@@ -38,5 +38,22 @@ router.get("/", function(req, res, next) {
     .catch((err) => res.status(500).send(err));
 });
  
+
+// DELETE SAVED OR FAVORITED MEALS 
+
+router.delete ("/:id", async function(req, res, next) {
+
+  try {
+    await db(`DELETE FROM saved_meals WHERE id = ${req.params.id};`);
+   
+    const result = await db(`SELECT * FROM saved_meals`);
+
+    res.send(result.data);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
+
 
 module.exports = router;

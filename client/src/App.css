@@ -130,11 +130,23 @@ h3 {
 
 li {
     list-style-type: none;
-    margin: 0;
+    margin: 1;
     padding: 0;
     display: inline-table;
     background-color: rgb(248, 248, 243);
     box-shadow: 0 4px 8px 2px rgba(77,77,77,0.15);
+}
+
+p {
+  font-size:larger;
+  text-align: center;
+  height: min-content;
+  display: inline-table;
+  max-width: 60%;  
+  border-radius: 10px; 
+  background-color: rgba(255, 251, 251, 0.842); 
+  color: #ee9247; 
+  font-weight: 500;
 }
 
 
