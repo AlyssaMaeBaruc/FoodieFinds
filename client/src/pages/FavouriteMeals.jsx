@@ -48,7 +48,7 @@ fetch("/api/recipes")
 
       return (
         <>
-        <p> Here, you'll find all your favorite dishes waiting for you. Happy Cooking! 😊</p>
+        <p> Here, you'll find all your favourite dishes waiting for you. Happy Cooking! 😊</p>
           {/* <div >
             {mealList.map((meal, index) => (
               <div className="container" key={index}>
