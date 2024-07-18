@@ -1,31 +1,31 @@
-1. Project Title
+1. Project Title: 
 Foodie Finds
 
-2. Description
+2. Description: 
 This project aims to curate meals tailored to your pantries ingredients.
 
+3. Features:   
 
-3. Features
 Ingredient Input
-Input Field: Users can enter ingredients into a designated input field.
-Add Button: Users can continuously add multiple ingredients.
-Delete Button: Users can remove ingredients from the list by clicking a "Delete" button next to each ingredient.
+- Input Field: Users can enter ingredients into a designated input field.
+- Add Button: Users can continuously add multiple ingredients.
+- Delete Button: Users can remove ingredients from the list by clicking a "Delete" button next to each ingredient.
 
 Meal Suggestions
-Meal Display: When users press "Enter," the system generates and displays meals that can be made using the entered ingredients.
+- Meal Display: When users press "Enter," the system generates and displays meals that can be made using the entered ingredients.
 
 Favorites and Saving
-Add to Favorites: Users can mark meals as favorites for easy access later.
-Save for Later: Users can save meals for future reference, stored in a database or local storage.
+- Add to Favorites: Users can mark meals as favorites for easy access later.
+- Save for Later: Users can save meals for future reference, stored in a database or local storage.
 
 
-4. Installation
+4. Installation: 
 Run npm install in the project folder to install dependencies related to Express (the server).
 
 cd client and run npm install install dependencies related to React (the client).
 
 
-5. Database prep
+5. Database prep: 
 Create .env file in project directory and add
 
 DB_NAME=mvp
@@ -42,7 +42,7 @@ WINDOWS: Search for mySQL in windows search and open mySQL 8.0 Command Line Clie
 In the MySQL CLI, type create database todos; to create a database in MySQL.
 
 
-6. Development
+6. Development: 
 Run npm start in project directory to start the Express server on port 4000 cd client and run npm run dev to start client server in development mode.
 Client is configured so all API calls will be proxied to port 4000 for a smoother development experience. Yay!
 You can test your client app in http://localhost:5173
