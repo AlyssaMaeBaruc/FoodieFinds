@@ -50,4 +50,10 @@ You can test your API in http://localhost:4000
 
 
 7. Technologies Used
-This project is built with React for its front end components, MySQL for its database, and Spoonacular API for meal suggestions. The styling was done with CSS. Postman was used for testing API routes, and Visual Studio Code was used for development.
+	•	Frontend: React
+	•	Backend: Express
+	•	Database: MySQL
+	•	API: Spoonacular API
+	•	Styling: CSS
+	•	Testing: Postman
+	•	Development: Visual Studio Code
