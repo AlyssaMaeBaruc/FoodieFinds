@@ -1,4 +1,4 @@
-1. Project Title: 
+# Project Title 
 Foodie Finds
 
 2. Description: 
