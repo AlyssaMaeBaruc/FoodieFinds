@@ -265,3 +265,126 @@
   margin-top: 32px;
   color: var(--brown-soft);
 }
+
+.recipe-title-link:hover {
+  color: var(--accent);
+}
+
+/* Recipe page */
+.back-button {
+  display: block;
+  margin: 0 0 20px;
+}
+
+.recipe-details {
+  overflow: hidden;
+  text-align: left;
+}
+
+.recipe-details-image {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+.recipe-details-body {
+  padding: 32px;
+}
+
+.recipe-details-title {
+  margin: 0 0 16px;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.recipe-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.fact {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  font-weight: 600;
+}
+
+.recipe-section-title {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ingredient-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 24px;
+  margin: 0 0 32px;
+  padding: 0;
+}
+
+.ingredient-list li {
+  padding-left: 20px;
+  position: relative;
+}
+
+.ingredient-list li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.step-list {
+  margin: 0 0 32px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step-list li {
+  position: relative;
+  padding: 0 0 18px 48px;
+  counter-increment: step;
+}
+
+.step-list li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brown);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.recipe-note {
+  margin: 0 0 32px;
+  color: var(--brown-soft);
+}
+
+.source-link {
+  display: inline-block;
+}
+
+@media (max-width: 560px) {
+  .recipe-details-body {
+    padding: 20px;
+  }
+}

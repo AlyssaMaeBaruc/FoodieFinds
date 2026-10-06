@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import RecipesList from '../components/RecipesList'; // Adjust the import path based on your project structure
+import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from '../spoonacular';
 
 
 
 function Homepage() {
 
-  const apiUrl = "https://api.spoonacular.com/recipes/findByIngredients";
-  const apiKey ="c5a76b2747564a09b63ee79f924ba472";
+  const apiUrl = `${SPOONACULAR_BASE_URL}/recipes/findByIngredients`;
+  const apiKey = SPOONACULAR_API_KEY;
 
   // this is for the users to input their ingredients 
   const [ingredientsInput, setIngredientsInput] = useState("");
@@ -48,15 +49,17 @@ function Homepage() {
 
   // function for the favourite button, it expects to receive the title and image when called 
   // returns true/false so the heart button knows whether to show as saved
-  const saveMeal = (title, image) => {
+  const saveMeal = (title, image, spoonacularId) => {
     return fetch("/api/recipes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ title, image })
+      body: JSON.stringify({ title, image, spoonacular_id: spoonacularId })
     })
       .then(response => {
+        // 409 means this recipe is already in favourites, so still show the heart as saved
+        if (response.status === 409) return true;
         if (!response.ok) {
           throw new Error("Failed to save meal");
         }

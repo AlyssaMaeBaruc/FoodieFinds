@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function HeartIcon() {
   return (
@@ -13,7 +14,7 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal}) {
   const [savedTitles, setSavedTitles] = useState([]);
 
   const handleSave = async (recipe) => {
-    const ok = await saveMeal(recipe.title, recipe.image);
+    const ok = await saveMeal(recipe.title, recipe.image, recipe.id);
     if (ok) setSavedTitles(t => [...t, recipe.title]);
   };
 
@@ -22,10 +23,19 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal}) {
     <ul className="recipe-grid">
       {recipes.map((recipe, index) => {
         const isSaved = savedTitles.includes(recipe.title);
+        // saved meals carry spoonacular_id (their own id is the database row); search results use id
+        const spoonacularId = "spoonacular_id" in recipe ? recipe.spoonacular_id : recipe.id;
+        const recipeLink = spoonacularId ? `/recipe/${spoonacularId}` : null;
         return (
           <li key={index} className="recipe-card glass">
             <div className="card-media">
-              <img src={recipe.image} alt={recipe.title} />
+              {recipeLink ? (
+                <Link to={recipeLink} aria-label={`View recipe for ${recipe.title}`}>
+                  <img src={recipe.image} alt={recipe.title} />
+                </Link>
+              ) : (
+                <img src={recipe.image} alt={recipe.title} />
+              )}
               {/* adding a favourite button for every meal that appears  */}
               {showSaveButton && (
                 <button
@@ -39,7 +49,7 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal}) {
                 </button>
               )}
             </div>
-            <h4>{recipe.title}</h4>
+            <h4>{recipeLink ? <Link to={recipeLink} className="recipe-title-link">{recipe.title}</Link> : recipe.title}</h4>
             {deleteMeal && (
               <button className="btn btn-ghost" onClick={() => deleteMeal(recipe.id)}>✖️ Delete</button>
             )}
