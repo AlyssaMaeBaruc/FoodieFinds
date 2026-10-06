@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import RecipeCard from './RecipeCard';
+import Icon from './Icon';
 
 // renderActions(recipe) lets a page add its own buttons to each card
 function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActions }) {
@@ -26,15 +27,18 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActi
             spoonacularId={spoonacularId}
             onSave={showSaveButton ? () => handleSave(recipe) : null}
             isSaved={savedTitles.includes(recipe.title)}
-          >
-            {(actions || deleteMeal) && (
-              <>
-                {actions}
-                {deleteMeal && (
-                  <button className="btn btn-ghost" onClick={() => deleteMeal(recipe.id)}>✖️ Delete</button>
-                )}
-              </>
+            mediaAction={deleteMeal && (
+              <button
+                className="photo-button delete-button"
+                onClick={() => deleteMeal(recipe.id)}
+                aria-label={`Delete ${recipe.title} from saved meals`}
+                title="Delete"
+              >
+                <Icon name="trash" size={18} />
+              </button>
             )}
+          >
+            {actions}
           </RecipeCard>
         );
       })}

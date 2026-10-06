@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Icon from './Icon';
 
 // pop-up listing saved meals, used to fill an empty slot on the This Week page.
 // target = { label: "Tue 6 Oct", slot: "lunch" } while open, null when closed
@@ -36,7 +37,7 @@ function MealChooser({ target, savedMeals, loading, busy, error, onPick, onClose
             <h2 id="meal-chooser-title" className="chooser-title">
               Add {target.slot} for <span>{target.label}</span>
             </h2>
-            <button className="chip-remove" aria-label="Close" onClick={onClose}>✖️</button>
+            <button className="icon-button" aria-label="Close" onClick={onClose}><Icon name="x" size={18} /></button>
           </div>
 
           {savedMeals?.length > 0 && (
@@ -55,7 +56,7 @@ function MealChooser({ target, savedMeals, loading, busy, error, onPick, onClose
 
           {!loading && savedMeals?.length === 0 && (
             <p className="recipe-note">
-              You have no saved meals yet. <Link to="/" className="hero-link" onClick={onClose}>Find recipes</Link> and tap the ♥ to save some.
+              You have no saved meals yet. <Link to="/" className="hero-link" onClick={onClose}>Find recipes</Link> and tap the heart to save some.
             </p>
           )}
           {!loading && savedMeals?.length > 0 && shown.length === 0 && (

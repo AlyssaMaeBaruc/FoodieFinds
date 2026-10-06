@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import MealChooser from "../components/MealChooser";
+import Icon from "../components/Icon";
 import { getWeekDays, todayText, parseDateText, addWeeks, weeksFromNow, weekTitle, SLOTS } from "../week";
 
 // Monday to Sunday view of the meal plan, with lunch and dinner for each day.
@@ -118,7 +119,8 @@ function ThisWeek() {
 
   return (
     <main className="page page-wide">
-      <section className="hero glass">
+      <section className="hero">
+        <p className="eyebrow">Meal plan</p>
         <h1 className="hero-title">{firstWord} <span>{rest.join(" ")}</span></h1>
         <p className="hero-text">
           {weekDays[0].label} – {weekDays[6].label}. Plan lunches and dinners from{" "}
@@ -127,16 +129,16 @@ function ThisWeek() {
       </section>
 
       <nav className="week-nav" aria-label="Choose week">
-        <button className="btn btn-ghost" onClick={() => goToWeek(-1)}>← Previous week</button>
+        <button className="btn btn-ghost" onClick={() => goToWeek(-1)}><Icon name="arrowLeft" size={16} /> Previous</button>
         {offset !== 0 && (
           <button className="btn" onClick={() => setSearchParams({})}>Back to this week</button>
         )}
-        <button className="btn btn-ghost" onClick={() => goToWeek(1)}>Next week →</button>
+        <button className="btn btn-ghost" onClick={() => goToWeek(1)}>Next <Icon name="arrowRight" size={16} /></button>
       </nav>
 
       {error && <div className="error-message glass">{error}</div>}
       {!loading && !error && meals.length === 0 && (
-        <p className="empty-state">Nothing planned for this week yet. Tap ＋ Add on any day to pick from your saved meals.</p>
+        <p className="empty-state">Nothing planned for this week yet. Tap Add on any day to pick from your saved meals.</p>
       )}
 
       {/* scrolls sideways when the screen is too narrow for 7 columns */}
@@ -161,9 +163,9 @@ function ThisWeek() {
                       title={meal.title}
                       image={meal.image}
                       spoonacularId={meal.spoonacular_id}
-                      meta={`🍽️ ${meal.servings} ${meal.servings === 1 ? "portion" : "portions"}`}
+                      meta={<><Icon name="utensils" size={14} /> {meal.servings} {meal.servings === 1 ? "portion" : "portions"}</>}
                     >
-                      <button className="btn btn-ghost" onClick={() => removeMeal(meal.id)}>✖️ Remove</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => removeMeal(meal.id)}><Icon name="x" size={14} /> Remove</button>
                     </RecipeCard>
                   ) : (
                     <button
@@ -171,7 +173,7 @@ function ThisWeek() {
                       onClick={() => openChooser(day, slot)}
                       aria-label={`Add ${slot} for ${day.label}`}
                     >
-                      <span className="slot-add-icon" aria-hidden="true">＋</span>
+                      <span className="slot-add-icon"><Icon name="plus" size={18} /></span>
                       Add
                     </button>
                   )}

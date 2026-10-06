@@ -1,11 +1,15 @@
 import React from 'react'
 import "./Navbar.css";
 import { Link, NavLink } from 'react-router-dom'
+import Icon from './Icon'
 
 export const Navbar = () => {
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-brand">Foodie<span>Finds</span></Link>
+      <Link to="/" className="navbar-brand">
+        <span className="brand-mark"><Icon name="chefHat" size={18} /></span>
+        <span>Foodie<span className="brand-accent">Finds</span></span>
+      </Link>
       <ul className="navbar-list">
         <li>
           <NavLink to="/" end className="navbar-link">Home</NavLink>

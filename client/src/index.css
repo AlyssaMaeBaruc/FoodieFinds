@@ -1,18 +1,33 @@
 :root {
-  --brown: #4b2e1e;
-  --brown-soft: #7a5a48;
-  --accent: #e0703a;
-  --accent-hover: #c85d2a;
-  --glass: rgba(255, 255, 255, 0.35);
-  --glass-strong: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --shadow: 0 8px 32px rgba(75, 46, 30, 0.12);
-  --shadow-hover: 0 14px 40px rgba(75, 46, 30, 0.2);
+  /* palette */
+  --brown: #3f2618;
+  --brown-soft: #7d5f4e;
+  --brown-faint: rgba(63, 38, 24, 0.08);
+  --accent: #e2683a;
+  --accent-hover: #c9552a;
+  --accent-soft: rgba(226, 104, 58, 0.12);
+  --cream: #fbf4ec;
+  --danger: #b3261e;
+
+  /* frosted glass surfaces */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --hairline: rgba(63, 38, 24, 0.08);
+  --blur: blur(18px) saturate(140%);
+
+  /* depth */
+  --shadow-sm: 0 1px 2px rgba(63, 38, 24, 0.05), 0 2px 8px rgba(63, 38, 24, 0.05);
+  --shadow: 0 1px 2px rgba(63, 38, 24, 0.04), 0 10px 30px rgba(63, 38, 24, 0.08);
+  --shadow-hover: 0 2px 4px rgba(63, 38, 24, 0.05), 0 18px 44px rgba(63, 38, 24, 0.14);
+
+  --radius-lg: 28px;
   --radius: 20px;
-  --blur: blur(14px);
+  --radius-sm: 14px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   font-family: "Plus Jakarta Sans", Inter, system-ui, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
   color: var(--brown);
 
@@ -27,13 +42,17 @@
   box-sizing: border-box;
 }
 
+/* soft warm gradient "mesh" behind the frosted glass */
 body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(rgba(255, 246, 236, 0.72), rgba(255, 240, 225, 0.82)),
-    url(https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)
-    center / cover fixed;
+    radial-gradient(48rem 36rem at 8% -8%, rgba(255, 176, 122, 0.55), transparent 62%),
+    radial-gradient(44rem 34rem at 96% 4%, rgba(255, 214, 165, 0.7), transparent 60%),
+    radial-gradient(40rem 34rem at 78% 78%, rgba(244, 152, 110, 0.28), transparent 62%),
+    radial-gradient(44rem 36rem at 6% 96%, rgba(255, 200, 150, 0.45), transparent 60%),
+    var(--cream);
+  background-attachment: fixed;
 }
 
 a {
@@ -45,15 +64,30 @@ button {
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
+  color: inherit;
   cursor: pointer;
   border: none;
   border-radius: 999px;
-  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
 }
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 a:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

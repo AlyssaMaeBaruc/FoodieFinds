@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getWeekDays, todayText, addWeeks, SLOTS } from '../week';
+import Icon from './Icon';
 
 const WEEKS = [
   { offset: 0, label: "This week" },
@@ -51,7 +52,7 @@ function AddToWeekPicker({ meal }) {
       if (!response.ok) throw new Error(data.message || "Couldn't add to your week. Please try again.");
 
       const alreadyThere = data.message === "Meal is already planned for this slot";
-      setMessage(alreadyThere ? `Already planned for ${slotLabel()} ✓` : `Added to ${slotLabel()} ✓`);
+      setMessage(alreadyThere ? `Already planned for ${slotLabel()}` : `Added to ${slotLabel()}`);
       setConflict(null);
       setOpen(false);
     } catch (err) {
@@ -65,9 +66,9 @@ function AddToWeekPicker({ meal }) {
   if (!open) {
     return (
       <>
-        {message && <p className="plan-message">{message}</p>}
-        <button className="btn btn-ghost" onClick={() => { setOpen(true); setMessage(null); }}>
-          📅 Add to week
+        {message && <p className="plan-message"><Icon name="check" size={16} /> {message}</p>}
+        <button className="btn btn-ghost btn-block" onClick={() => { setOpen(true); setMessage(null); }}>
+          <Icon name="calendar" size={16} /> Add to week
         </button>
       </>
     );

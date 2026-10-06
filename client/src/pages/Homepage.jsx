@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import RecipesList from '../components/RecipesList'; // Adjust the import path based on your project structure
 import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from '../spoonacular';
+import Icon from '../components/Icon';
 
 
 
@@ -152,22 +153,24 @@ function Homepage() {
 
   return (
     <main className="page">
-    <section className="hero glass">
-      <h1 className="hero-title">Find meals with <span>your ingredients</span> 🍽️</h1>
+    <section className="hero">
+      <p className="eyebrow">Pantry-first recipes</p>
+      <h1 className="hero-title">Find meals with <span>your ingredients</span></h1>
       <p className="hero-text">Welcome to FoodieFinds, your ultimate destination for culinary inspiration!
         Explore a world of delightful meal ideas, all tailored to your pantry's ingredients.</p>
     </section>
 
     <form className="search-form glass" onSubmit={addNewIngredients}>
+      <Icon name="search" size={20} className="search-icon" />
       <input name="text" type="text" className="search-bar" placeholder="Enter your ingredients" value={ingredientsInput} onChange={handleChange} />
       <button type="submit" className="btn" disabled={checkingIngredient}>
-        {checkingIngredient ? "Checking…" : "Add"}
+        {checkingIngredient ? "Checking…" : <><Icon name="plus" size={16} /> Add</>}
       </button>
     </form>
 
     {ingredientError && (
       <div className="ingredient-error glass" role="alert">
-        <p>⚠️ {ingredientError}</p>
+        <p><Icon name="alert" size={18} /> {ingredientError}</p>
         {suggestions.length > 0 && (
           <div className="suggestions">
             <span>Did you mean:</span>
@@ -188,12 +191,12 @@ function Homepage() {
           <button
             className="chip-remove"
             aria-label={`Remove ${ingredient}`}
-            onClick={() => deleteIngredients(index)}>✖️</button>
+            onClick={() => deleteIngredients(index)}><Icon name="x" size={14} /></button>
         </li>
       ))}
     </ul>
-    <button onClick={handleSubmit} className="btn btn-accent find-button">🔎 Find Recipes</button>
-    {error && <div className="error-message glass">ERROR 404 : {error}</div>}
+    <button onClick={handleSubmit} className="btn btn-accent find-button"><Icon name="search" size={18} /> Find recipes</button>
+    {error && <div className="error-message glass"><Icon name="alert" size={18} /> {error}</div>}
 
     <RecipesList recipes={recipes} saveMeal={saveMeal} showSaveButton={true}/>
     </main>
