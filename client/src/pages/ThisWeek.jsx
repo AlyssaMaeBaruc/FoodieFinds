@@ -1,30 +1,58 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
-import { getWeekDays, todayText, SLOTS } from "../week";
+import MealChooser from "../components/MealChooser";
+import { getWeekDays, todayText, parseDateText, addWeeks, weeksFromNow, weekTitle, SLOTS } from "../week";
 
-// Monday to Sunday view of the meal plan, with lunch and dinner for each day
+// Monday to Sunday view of the meal plan, with lunch and dinner for each day.
+// ?week=YYYY-MM-DD picks another week, so Back from a recipe returns to the same week
 function ThisWeek() {
-  const weekDays = getWeekDays();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const shownDate = parseDateText(searchParams.get("week")) ?? new Date();
+  const weekDays = getWeekDays(shownDate);
+  const weekStart = weekDays[0].date;
+  const offset = weeksFromNow(shownDate);
   const today = todayText();
 
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // bumped after adding a meal so the week reloads with the new card
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // "+ Add" pop-up: which empty slot it is filling, plus the saved meals to choose from
+  const [chooserTarget, setChooserTarget] = useState(null);
+  const [savedMeals, setSavedMeals] = useState(null);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [chooserError, setChooserError] = useState(null);
 
   useEffect(() => {
-    fetch(`/api/meal-plan?week=${today}`)
+    // ignore answers for a week the user has already clicked away from
+    let current = true;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/meal-plan?week=${weekStart}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Couldn't load your week. Please try again later.");
+        if (!res.ok) throw new Error("Couldn't load this week. Please try again later.");
         return res.json();
       })
-      .then((data) => setMeals(data.meals))
+      .then((data) => current && setMeals(data.meals))
       .catch((err) => {
+        if (!current) return;
+        setMeals([]);
         setError(err.message);
         console.error(err);
       })
-      .finally(() => setLoading(false));
-  }, [today]);
+      .finally(() => current && setLoading(false));
+    return () => { current = false; };
+  }, [weekStart, reloadKey]);
+
+  const goToWeek = (weeks) => {
+    const target = addWeeks(shownDate, weeks);
+    // the current week keeps a clean /this-week address
+    setSearchParams(weeksFromNow(target) === 0 ? {} : { week: getWeekDays(target)[0].date });
+  };
 
   const removeMeal = (id) => {
     fetch(`/api/meal-plan/${id}`, { method: "DELETE" })
@@ -39,23 +67,80 @@ function ThisWeek() {
       });
   };
 
+  const openChooser = (day, slot) => {
+    setChooserTarget({ date: day.date, label: day.label, slot });
+    setChooserError(null);
+    // saved meals are loaded once, the first time the pop-up opens
+    if (savedMeals === null) {
+      setSavedLoading(true);
+      fetch("/api/recipes")
+        .then((res) => {
+          if (!res.ok) throw new Error("Couldn't load your saved meals.");
+          return res.json();
+        })
+        .then((data) => setSavedMeals(data))
+        .catch((err) => {
+          setChooserError(err.message);
+          console.error(err);
+        })
+        .finally(() => setSavedLoading(false));
+    }
+  };
+
+  const addToSlot = async (savedMeal) => {
+    setAdding(true);
+    setChooserError(null);
+    try {
+      const res = await fetch("/api/meal-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saved_meal_id: savedMeal.id, plan_date: chooserTarget.date, slot: chooserTarget.slot }),
+      });
+      const data = await res.json().catch(() => ({}));
+      // the slot was filled elsewhere (e.g. another tab) since this page loaded
+      if (res.status === 409) {
+        setReloadKey((k) => k + 1);
+        throw new Error(`This slot was just filled with ${data.existing?.title ?? "another meal"}. Remove it first to choose a different one.`);
+      }
+      if (!res.ok) throw new Error(data.message || "Couldn't add that meal. Please try again.");
+      setChooserTarget(null);
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      setChooserError(err.message);
+      console.error(err);
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const mealFor = (date, slot) => meals.find((meal) => meal.plan_date === date && meal.slot === slot);
+  const [firstWord, ...rest] = weekTitle(offset, weekDays).split(" ");
 
   return (
     <main className="page page-wide">
       <section className="hero glass">
-        <h1 className="hero-title">This <span>week</span></h1>
+        <h1 className="hero-title">{firstWord} <span>{rest.join(" ")}</span></h1>
         <p className="hero-text">
           {weekDays[0].label} – {weekDays[6].label}. Plan lunches and dinners from{" "}
           <Link to="/favourites" className="hero-link">your saved meals</Link>.
         </p>
       </section>
 
+      <nav className="week-nav" aria-label="Choose week">
+        <button className="btn btn-ghost" onClick={() => goToWeek(-1)}>← Previous week</button>
+        {offset !== 0 && (
+          <button className="btn" onClick={() => setSearchParams({})}>Back to this week</button>
+        )}
+        <button className="btn btn-ghost" onClick={() => goToWeek(1)}>Next week →</button>
+      </nav>
+
       {error && <div className="error-message glass">{error}</div>}
       {!loading && !error && meals.length === 0 && (
-        <p className="empty-state">Nothing planned yet. Open My Saved Meals and tap 📅 Add to this week.</p>
+        <p className="empty-state">Nothing planned for this week yet. Tap ＋ Add on any day to pick from your saved meals.</p>
       )}
 
+      {/* scrolls sideways when the screen is too narrow for 7 columns */}
+      <div className="week-scroll">
       <div className="week-grid">
         {weekDays.map((day) => (
           <section key={day.date} className={`day-column glass${day.date === today ? " is-today" : ""}`}>
@@ -76,11 +161,19 @@ function ThisWeek() {
                       title={meal.title}
                       image={meal.image}
                       spoonacularId={meal.spoonacular_id}
+                      meta={`🍽️ ${meal.servings} ${meal.servings === 1 ? "portion" : "portions"}`}
                     >
                       <button className="btn btn-ghost" onClick={() => removeMeal(meal.id)}>✖️ Remove</button>
                     </RecipeCard>
                   ) : (
-                    <div className="slot-empty">Nothing planned</div>
+                    <button
+                      className="slot-empty slot-add"
+                      onClick={() => openChooser(day, slot)}
+                      aria-label={`Add ${slot} for ${day.label}`}
+                    >
+                      <span className="slot-add-icon" aria-hidden="true">＋</span>
+                      Add
+                    </button>
                   )}
                 </div>
               );
@@ -88,6 +181,17 @@ function ThisWeek() {
           </section>
         ))}
       </div>
+      </div>
+
+      <MealChooser
+        target={chooserTarget}
+        savedMeals={savedMeals}
+        loading={savedLoading}
+        busy={adding}
+        error={chooserError}
+        onPick={addToSlot}
+        onClose={() => setChooserTarget(null)}
+      />
     </main>
   );
 }

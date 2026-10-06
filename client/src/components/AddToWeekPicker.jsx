@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { getWeekDays, todayText, SLOTS } from '../week';
+import { getWeekDays, todayText, addWeeks, SLOTS } from '../week';
 
-// "Add to this week" button that opens a day + lunch/dinner picker inside a saved meal card
+const WEEKS = [
+  { offset: 0, label: "This week" },
+  { offset: 1, label: "Next week" },
+];
+
+// "Add to week" button that opens a week + day + lunch/dinner picker inside a saved meal card
 function AddToWeekPicker({ meal }) {
-  const weekDays = getWeekDays();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekDays = getWeekDays(addWeeks(new Date(), weekOffset));
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(todayText());
   const [slot, setSlot] = useState("dinner");
@@ -13,7 +19,14 @@ function AddToWeekPicker({ meal }) {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
-  const slotLabel = () => `${weekDays.find((d) => d.date === date)?.weekday} ${slot}`;
+  const slotLabel = () => `${weekDays.find((d) => d.date === date)?.label} ${slot}`;
+
+  // this week starts on today; next week starts on its Monday
+  const chooseWeek = (offset) => {
+    setWeekOffset(offset);
+    setDate(offset === 0 ? todayText() : getWeekDays(addWeeks(new Date(), offset))[0].date);
+    reset();
+  };
 
   const reset = () => {
     setConflict(null);
@@ -54,7 +67,7 @@ function AddToWeekPicker({ meal }) {
       <>
         {message && <p className="plan-message">{message}</p>}
         <button className="btn btn-ghost" onClick={() => { setOpen(true); setMessage(null); }}>
-          📅 Add to this week
+          📅 Add to week
         </button>
       </>
     );
@@ -62,6 +75,21 @@ function AddToWeekPicker({ meal }) {
 
   return (
     <div className="week-picker">
+      <div className="slot-toggle" role="radiogroup" aria-label="Week">
+        {WEEKS.map((week) => (
+          <button
+            key={week.offset}
+            type="button"
+            role="radio"
+            aria-checked={weekOffset === week.offset}
+            className={`slot-option${weekOffset === week.offset ? " is-active" : ""}`}
+            onClick={() => chooseWeek(week.offset)}
+          >
+            {week.label}
+          </button>
+        ))}
+      </div>
+
       <label className="picker-label">
         Day
         <select className="picker-select" value={date} onChange={(e) => { setDate(e.target.value); reset(); }}>

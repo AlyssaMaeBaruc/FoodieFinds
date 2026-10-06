@@ -10,8 +10,8 @@ function HeartIcon() {
 }
 
 // photo card used by search results, saved meals and the weekly plan.
-// `children` are the buttons shown under the title.
-function RecipeCard({ title, image, spoonacularId, onSave, isSaved, compact = false, as: Tag = "li", children }) {
+// `meta` is a small line under the title (e.g. portions); `children` are the buttons below it.
+function RecipeCard({ title, image, spoonacularId, onSave, isSaved, compact = false, as: Tag = "li", meta, children }) {
   const recipeLink = spoonacularId ? `/recipe/${spoonacularId}` : null;
 
   return (
@@ -38,6 +38,7 @@ function RecipeCard({ title, image, spoonacularId, onSave, isSaved, compact = fa
         )}
       </div>
       <h4>{recipeLink ? <Link to={recipeLink} className="recipe-title-link">{title}</Link> : title}</h4>
+      {meta && <p className="card-meta">{meta}</p>}
       {children && <div className="card-actions">{children}</div>}
     </Tag>
   );
