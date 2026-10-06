@@ -21,9 +21,16 @@ function Homepage() {
   //for error 
   const [error,setError] = useState(null);
 
+  // for checking typed ingredients before they are added
+  const [ingredientError, setIngredientError] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [checkingIngredient, setCheckingIngredient] = useState(false);
+
 // input type bar to handle change when the add button is clicked 
   function handleChange(e) {
     setIngredientsInput(e.target.value);
+    setIngredientError(null);
+    setSuggestions([]);
   };
 
 // create a function when we press find recipes button
@@ -32,12 +39,55 @@ function Homepage() {
     console.log("Ingredients are submitted")
   };
 
-  // create a function for appending the ingredients when we click the add button 
-  function addNewIngredients(e){
-    e.preventDefault();
-    if (!ingredientsInput.trim()) return;
-    setAddedIngredients(i => [...i, ingredientsInput.trim()]);
+  // escape regex characters so ingredients like "half & half" match literally
+  const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // asks Spoonacular whether the typed ingredient exists.
+  // valid when it appears as a whole word in a known ingredient ("chicken" matches "chicken leg"),
+  // so typos like "chiken" or "banan" are rejected; close matches come back as suggestions
+  async function checkIngredient(ingredient) {
+    const response = await fetch(
+      `${SPOONACULAR_BASE_URL}/food/ingredients/autocomplete?apiKey=${apiKey}&number=5&query=${encodeURIComponent(ingredient)}`
+    );
+    if (!response.ok) throw new Error("Couldn't check that ingredient. Please try again.");
+    const matches = (await response.json()).map((match) => match.name);
+    const wholeWord = new RegExp(`(^|\\s)${escapeRegExp(ingredient)}(\\s|$)`, "i");
+    return { isValid: matches.some((name) => wholeWord.test(name)), matches };
+  }
+
+  function addIngredient(ingredient) {
+    setAddedIngredients(i => [...i, ingredient]);
     setIngredientsInput("");
+    setIngredientError(null);
+    setSuggestions([]);
+  }
+
+  // create a function for appending the ingredients when we click the add button 
+  async function addNewIngredients(e){
+    e.preventDefault();
+    const ingredient = ingredientsInput.trim().toLowerCase();
+    if (!ingredient || checkingIngredient) return;
+
+    if (addedIngredients.includes(ingredient)) {
+      setIngredientError(`"${ingredient}" is already in your list.`);
+      return;
+    }
+
+    setCheckingIngredient(true);
+    try {
+      const { isValid, matches } = await checkIngredient(ingredient);
+      if (isValid) {
+        addIngredient(ingredient);
+      } else {
+        setIngredientError(`We couldn't find "${ingredient}". Check the spelling and try again.`);
+        setSuggestions(matches.filter((name) => !addedIngredients.includes(name)).slice(0, 3));
+      }
+    } catch (error) {
+      setIngredientError(error.message);
+      console.error(error);
+    } finally {
+      setCheckingIngredient(false);
+    }
   }
 
   // create a function for delete button whenever the user deletes an ingredient 
@@ -110,8 +160,26 @@ function Homepage() {
 
     <form className="search-form glass" onSubmit={addNewIngredients}>
       <input name="text" type="text" className="search-bar" placeholder="Enter your ingredients" value={ingredientsInput} onChange={handleChange} />
-      <button type="submit" className="btn">Add</button>
+      <button type="submit" className="btn" disabled={checkingIngredient}>
+        {checkingIngredient ? "Checking…" : "Add"}
+      </button>
     </form>
+
+    {ingredientError && (
+      <div className="ingredient-error glass" role="alert">
+        <p>⚠️ {ingredientError}</p>
+        {suggestions.length > 0 && (
+          <div className="suggestions">
+            <span>Did you mean:</span>
+            {suggestions.map((name) => (
+              <button key={name} type="button" className="suggestion" onClick={() => addIngredient(name)}>
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
 
     <ul className="chips">
       {addedIngredients.map((ingredient, index) => (
