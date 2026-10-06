@@ -18,7 +18,14 @@ export const Navbar = () => {
           <NavLink to="/this-week" className="navbar-link">This Week</NavLink>
         </li>
         <li>
-          <NavLink to="/favourites" className="navbar-link">My Saved Meals</NavLink>
+          <NavLink to="/shopping-list" className="navbar-link">
+            <span className="label-long">Shopping List</span><span className="label-short">Shopping</span>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/favourites" className="navbar-link">
+            <span className="label-long">My Saved Meals</span><span className="label-short">Saved</span>
+          </NavLink>
         </li>
       </ul>
     </nav>

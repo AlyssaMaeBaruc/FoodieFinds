@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from "../spoonacular";
 import Icon from "../components/Icon";
+import { getInstructionSections } from "../instructions";
 
 // full recipe page: ingredients, steps and a link to the original
 function RecipeDetails() {
@@ -29,8 +30,8 @@ function RecipeDetails() {
       });
   }, [id]);
 
-  // Spoonacular splits instructions into sections; flatten them into one list of steps
-  const steps = recipe?.analyzedInstructions?.flatMap((section) => section.steps) ?? [];
+  // cleaned-up steps, grouped into sections (most recipes have one unnamed section)
+  const instructionSections = recipe ? getInstructionSections(recipe) : [];
 
   return (
     <main className="page">
@@ -53,7 +54,7 @@ function RecipeDetails() {
                   <span className="fact"><Icon name="clock" size={16} /> {recipe.readyInMinutes} min</span>
                 )}
                 {recipe.servings > 0 && (
-                  <span className="fact"><Icon name="utensils" size={16} /> {recipe.servings} servings</span>
+                  <span className="fact"><Icon name="utensils" size={16} /> {recipe.servings} {recipe.servings === 1 ? "serving" : "servings"}</span>
                 )}
               </div>
               {recipe.sourceUrl && (
@@ -78,12 +79,19 @@ function RecipeDetails() {
 
             <section className="recipe-panel glass">
               <h2 className="recipe-section-title">Instructions</h2>
-              {steps.length > 0 ? (
-                <ol className="step-list">
-                  {steps.map((step, index) => (
-                    <li key={index}>{step.step}</li>
+              {instructionSections.length > 0 ? (
+                <div className="instructions">
+                  {instructionSections.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="instruction-section">
+                      {section.name && <h3 className="instruction-section-title">{section.name}</h3>}
+                      <ol className="step-list">
+                        {section.steps.map((step, index) => (
+                          <li key={index}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
                   ))}
-                </ol>
+                </div>
               ) : (
                 <p className="recipe-note">No step-by-step instructions for this one. Use the original recipe link above.</p>
               )}

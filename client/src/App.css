@@ -653,11 +653,27 @@
   background: var(--accent);
 }
 
+/* one counter for all sections, so numbering continues across them */
+.instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  counter-reset: step;
+}
+
+.instruction-section-title {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-hover);
+}
+
 .step-list {
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: step;
 }
 
 .step-list li {
@@ -977,4 +993,396 @@
   height: 48px;
   object-fit: cover;
   border-radius: 10px;
+}
+
+/* ---------- Shopping List page ---------- */
+
+/* stays visible below the navbar while scrolling the list */
+.list-toolbar {
+  position: sticky;
+  top: 80px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 18px 22px;
+  text-align: left;
+}
+
+.list-status {
+  flex: 1;
+  min-width: 220px;
+}
+
+.list-progress-text {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.list-progress-text strong {
+  font-size: 1.15rem;
+  color: var(--accent-hover);
+}
+
+.progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--brown-faint);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f08a55, var(--accent-hover));
+  transition: width 0.4s var(--ease);
+}
+
+.list-generated {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--brown-soft);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 12px 18px;
+  border-color: rgba(226, 104, 58, 0.35);
+  background: rgba(255, 243, 234, 0.85);
+  color: var(--accent-hover);
+  font-weight: 600;
+  text-align: left;
+}
+
+.made-from {
+  max-width: 760px;
+  margin: 0 auto 28px;
+  text-align: left;
+}
+
+.made-from-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brown-soft);
+}
+
+.meal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meal-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 5px 14px 5px 5px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+
+.meal-chip img {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.meal-chip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.meal-chip-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.meal-chip-slot {
+  font-size: 0.75rem;
+  color: var(--brown-soft);
+  text-transform: capitalize;
+}
+
+.meal-chip.is-skipped {
+  opacity: 0.55;
+}
+
+/* one steady column of aisle cards, so nothing reshuffles sideways while ticking */
+.aisle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.aisle-card {
+  padding: 18px 20px 8px;
+  border-radius: var(--radius);
+  animation: fade-in 0.3s var(--ease);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.aisle-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.shopping-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* grid rows let a leaving item collapse its height smoothly */
+.shopping-item {
+  display: grid;
+  grid-template-rows: 1fr;
+  border-bottom: 1px solid var(--hairline);
+  transition: grid-template-rows 0.25s var(--ease), opacity 0.25s var(--ease), border-color 0.25s;
+}
+
+.shopping-item > label {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shopping-item.is-leaving {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  border-color: transparent;
+}
+
+.shopping-item:last-child {
+  border-bottom: none;
+}
+
+.shopping-item label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 2px;
+  cursor: pointer;
+}
+
+/* round orange checkbox */
+.check {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  /* lines up with the first line of the ingredient name */
+  margin: 1px 0 0;
+  border: 2px solid rgba(63, 38, 24, 0.25);
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.check::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  margin-top: -2px;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s var(--ease);
+}
+
+.check:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.check:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.check:hover {
+  border-color: var(--accent);
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+/* which planned meals use this ingredient */
+.item-used {
+  margin-top: 1px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--brown-soft);
+}
+
+.shopping-item.is-bought .item-text {
+  opacity: 0.5;
+}
+
+.shopping-item.is-bought .item-name {
+  text-decoration: line-through;
+  text-decoration-color: rgba(63, 38, 24, 0.5);
+}
+
+/* collapsed sections under the list: "Check your pantry" and "In your basket" */
+.list-drawer {
+  max-width: 760px;
+  margin: 16px auto 0;
+  padding: 0;
+  text-align: left;
+}
+
+.pantry {
+  border-style: dashed;
+  border-color: rgba(63, 38, 24, 0.18);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.basket {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.drawer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--radius);
+}
+
+.drawer-summary::-webkit-details-marker {
+  display: none;
+}
+
+.drawer-summary:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.drawer-heading {
+  display: flex;
+  flex-direction: column;
+  font-weight: 800;
+}
+
+.basket-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.basket-count {
+  animation: count-pop 0.35s var(--ease);
+}
+
+@keyframes count-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.drawer-sub {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--brown-soft);
+}
+
+.drawer-chevron {
+  color: var(--brown-soft);
+  transition: transform 0.2s var(--ease);
+}
+
+.list-drawer[open] .drawer-chevron {
+  transform: rotate(90deg);
+}
+
+.drawer-items {
+  padding: 0 22px 10px;
+}
+
+/* "Shopping done" message */
+.all-done {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  text-align: left;
+  animation: fade-in 0.3s var(--ease);
+}
+
+.all-done-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f08a55, var(--accent-hover));
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(226, 104, 58, 0.3);
+}
+
+.all-done-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.all-done-text {
+  margin: 2px 0 0;
+  color: var(--brown-soft);
+}
+
+@media (max-width: 640px) {
+  .list-toolbar {
+    top: 64px;
+  }
 }

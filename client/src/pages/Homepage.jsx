@@ -156,8 +156,6 @@ function Homepage() {
     <section className="hero">
       <p className="eyebrow">Pantry-first recipes</p>
       <h1 className="hero-title">Find meals with <span>your ingredients</span></h1>
-      <p className="hero-text">Welcome to FoodieFinds, your ultimate destination for culinary inspiration!
-        Explore a world of delightful meal ideas, all tailored to your pantry's ingredients.</p>
     </section>
 
     <form className="search-form glass" onSubmit={addNewIngredients}>

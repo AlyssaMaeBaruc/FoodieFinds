@@ -71,6 +71,20 @@
   color: #fff;
 }
 
+/* shorter link names on small screens so all four fit */
+.label-short {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .label-long {
+    display: none;
+  }
+  .label-short {
+    display: inline;
+  }
+}
+
 @media (max-width: 640px) {
   .navbar {
     padding: 10px 16px;

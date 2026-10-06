@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import MealChooser from "../components/MealChooser";
 import Icon from "../components/Icon";
-import { getWeekDays, todayText, parseDateText, addWeeks, weeksFromNow, weekTitle, SLOTS } from "../week";
+import WeekNav, { useSelectedWeek } from "../components/WeekNav";
+import { todayText, weekTitle, SLOTS } from "../week";
 
 // Monday to Sunday view of the meal plan, with lunch and dinner for each day.
 // ?week=YYYY-MM-DD picks another week, so Back from a recipe returns to the same week
 function ThisWeek() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const shownDate = parseDateText(searchParams.get("week")) ?? new Date();
-  const weekDays = getWeekDays(shownDate);
-  const weekStart = weekDays[0].date;
-  const offset = weeksFromNow(shownDate);
+  const { weekDays, weekStart, offset, goToWeek, goToThisWeek } = useSelectedWeek();
   const today = todayText();
 
   const [meals, setMeals] = useState([]);
@@ -48,12 +45,6 @@ function ThisWeek() {
       .finally(() => current && setLoading(false));
     return () => { current = false; };
   }, [weekStart, reloadKey]);
-
-  const goToWeek = (weeks) => {
-    const target = addWeeks(shownDate, weeks);
-    // the current week keeps a clean /this-week address
-    setSearchParams(weeksFromNow(target) === 0 ? {} : { week: getWeekDays(target)[0].date });
-  };
 
   const removeMeal = (id) => {
     fetch(`/api/meal-plan/${id}`, { method: "DELETE" })
@@ -128,13 +119,7 @@ function ThisWeek() {
         </p>
       </section>
 
-      <nav className="week-nav" aria-label="Choose week">
-        <button className="btn btn-ghost" onClick={() => goToWeek(-1)}><Icon name="arrowLeft" size={16} /> Previous</button>
-        {offset !== 0 && (
-          <button className="btn" onClick={() => setSearchParams({})}>Back to this week</button>
-        )}
-        <button className="btn btn-ghost" onClick={() => goToWeek(1)}>Next <Icon name="arrowRight" size={16} /></button>
-      </nav>
+      <WeekNav offset={offset} goToWeek={goToWeek} goToThisWeek={goToThisWeek} />
 
       {error && <div className="error-message glass">{error}</div>}
       {!loading && !error && meals.length === 0 && (
