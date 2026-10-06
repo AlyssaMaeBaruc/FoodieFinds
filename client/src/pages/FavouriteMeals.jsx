@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import RecipesList from '../components/RecipesList'; 
+import AddToWeekPicker from '../components/AddToWeekPicker';
 
 
 function FavouriteMeals() {
@@ -64,7 +65,12 @@ fetch("/api/recipes")
               </div>
             ))}
           </div> */}
-            <RecipesList recipes={mealList} showSaveButton={false} deleteMeal={deleteSavedMeal} />
+            <RecipesList
+              recipes={mealList}
+              showSaveButton={false}
+              deleteMeal={deleteSavedMeal}
+              renderActions={(meal) => <AddToWeekPicker meal={meal} />}
+            />
         </main>
       );
     }

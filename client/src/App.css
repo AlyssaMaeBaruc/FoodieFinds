@@ -432,3 +432,204 @@
   cursor: wait;
   transform: none;
 }
+
+/* Card action buttons (saved meals, weekly plan) */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hero-link {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.hero-link:hover {
+  text-decoration: underline;
+}
+
+/* Add to this week picker */
+.week-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+}
+
+.picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.picker-select {
+  padding: 8px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--brown);
+}
+
+.slot-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(75, 46, 30, 0.08);
+}
+
+.slot-option {
+  padding: 7px 0;
+  background: transparent;
+  color: var(--brown);
+}
+
+.slot-option.is-active {
+  background: var(--brown);
+  color: #fff;
+}
+
+.picker-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.picker-buttons .btn {
+  padding: 8px 16px;
+}
+
+.picker-confirm p {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.picker-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.plan-message {
+  margin: 0;
+  color: var(--accent-hover);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* This Week page */
+.page-wide {
+  max-width: 1500px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.day-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 10px;
+  border-radius: 18px;
+}
+
+.day-column.is-today {
+  border: 2px solid var(--accent);
+}
+
+.day-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.today-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slot-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brown-soft);
+}
+
+.slot-empty {
+  display: grid;
+  place-items: center;
+  min-height: 90px;
+  padding: 12px;
+  border: 2px dashed rgba(75, 46, 30, 0.2);
+  border-radius: 14px;
+  color: var(--brown-soft);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.recipe-card.is-compact {
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.recipe-card.is-compact img {
+  border-radius: 10px;
+}
+
+.recipe-card.is-compact h4 {
+  margin: 8px 2px;
+  font-size: 0.9rem;
+}
+
+.recipe-card.is-compact .btn-ghost {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* 7 columns get too narrow on smaller screens: wrap, then stack */
+@media (max-width: 1100px) {
+  .week-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .week-grid {
+    grid-template-columns: 1fr;
+  }
+}

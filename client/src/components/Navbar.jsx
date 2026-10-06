@@ -11,6 +11,9 @@ export const Navbar = () => {
           <NavLink to="/" end className="navbar-link">Home</NavLink>
         </li>
         <li>
+          <NavLink to="/this-week" className="navbar-link">This Week</NavLink>
+        </li>
+        <li>
           <NavLink to="/favourites" className="navbar-link">My Saved Meals</NavLink>
         </li>
       </ul>
