@@ -16,9 +16,8 @@ router.post('/', async function (req, res, next) {
     
 const { title, image } = req.body; 
 
-const insertSavedRecipe = `INSERT INTO saved_meals (title, image) VALUES ("${title}", "${image}");`
-
-await db (insertSavedRecipe);
+// placeholders (?) let titles with quotes in them save safely
+await db("INSERT INTO saved_meals (title, image) VALUES (?, ?);", [title, image]);
 res.status(200).send({message: 'Meal have been saved'});
 } catch (err) {
 console.error('Error on saving recipe', err);
@@ -44,7 +43,7 @@ router.get("/", async function(req, res, next) {
 router.delete ("/:id", async function(req, res, next) {
 
   try {
-    await db(`DELETE FROM saved_meals WHERE id = ${req.params.id};`);
+    await db("DELETE FROM saved_meals WHERE id = ?;", [req.params.id]);
    
     const result = await db(`SELECT * FROM saved_meals`);
 

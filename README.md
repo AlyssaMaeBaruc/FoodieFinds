@@ -1,59 +1,177 @@
-# Project Title 
-Foodie Finds
+# 🍽️ FoodieFinds
 
-2. Description: 
-This project aims to curate meals tailored to your pantries ingredients.
+**Find meals with the ingredients you already have.**
 
-3. Features:   
+FoodieFinds turns what's in your pantry into meal ideas. Add the ingredients you have, hit **Find Recipes**, and browse dishes you can make, then heart the ones you love to keep them in your saved meals.
 
-Ingredient Input
-- Input Field: Users can enter ingredients into a designated input field.
-- Add Button: Users can continuously add multiple ingredients.
-- Delete Button: Users can remove ingredients from the list by clicking a "Delete" button next to each ingredient.
+---
 
-Meal Suggestions
-- Meal Display: When users press "Enter," the system generates and displays meals that can be made using the entered ingredients.
+## ✨ Features
 
-Favorites and Saving
-- Add to Favorites: Users can mark meals as favorites for easy access later.
-- Save for Later: Users can save meals for future reference, stored in a database or local storage.
+### Ingredient search
 
+- **Add ingredients:** type an ingredient and press **Add** (or Enter). Blank entries are ignored.
+- **Ingredient tags:** each ingredient appears as a tag with its own ✖️ to remove it.
+- **Find Recipes:** searches for meals that use your ingredients, powered by the [Spoonacular API](https://spoonacular.com/food-api/docs#Search-Recipes-by-Ingredients).
+- **Clear errors:** a message appears if no recipes match or the search fails.
 
-4. Installation: 
-Run npm install in the project folder to install dependencies related to Express (the server).
+### Recipe cards
 
-cd client and run npm install install dependencies related to React (the client).
+- Recipes appear in a responsive grid of frosted-glass cards, each with a photo and title.
+- Cards lift slightly when you hover over them.
 
+### Favourites
 
-5. Database prep: 
-Create .env file in project directory and add
+- **Heart to save:** tap the heart on a recipe photo to save it. The heart fills orange to confirm, and a saved meal can't be added twice by accident.
+- **My Saved Meals:** a separate page lists every meal you've saved. Saved meals are stored in a MySQL database.
+- **Delete:** remove a meal from your saved list at any time.
 
+### Design
+
+- Modern frosted-glass look over a full-screen food photo.
+- Warm palette: dark brown text with orange accents, using the Plus Jakarta Sans font.
+- A frosted navigation bar that stays at the top of the page, highlighting the page you're on.
+- Layout adapts to phone, tablet and desktop screens.
+
+---
+
+## 🛠️ Tech stack
+
+| Layer    | Technology                                |
+| -------- | ----------------------------------------- |
+| Frontend | React 18, React Router, Vite              |
+| Backend  | Node.js, Express                          |
+| Database | MySQL 8+ (via the `mysql2` driver)        |
+| Recipes  | Spoonacular API                           |
+| Styling  | Plain CSS with shared color variables     |
+
+---
+
+## 📁 Project structure
+
+```text
+FoodieFinds/
+├── app.js                  # Express app setup
+├── bin/www                 # Starts the server on port 4000
+├── routes/recipes.js       # Saved-meals API (GET, POST, DELETE)
+├── model/
+│   ├── helper.js           # Runs database queries
+│   ├── database.js         # Migration script (creates tables)
+│   └── init_db.sql         # Table definitions
+└── client/                 # React frontend
+    └── src/
+        ├── App.jsx                     # Routes
+        ├── components/Navbar.jsx       # Top navigation bar
+        ├── components/RecipesList.jsx  # Recipe card grid + heart button
+        ├── pages/Homepage.jsx          # Ingredient search
+        └── pages/FavouriteMeals.jsx    # Saved meals page
+```
+
+---
+
+## 🚀 Getting started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/)
+- [MySQL](https://dev.mysql.com/downloads/) 8 or newer
+
+### 1. Install dependencies
+
+```bash
+# in the project folder (server)
+npm install
+
+# then the client
+cd client
+npm install
+```
+
+### 2. Create the database
+
+Open the MySQL command line and create the `mvp` database:
+
+```bash
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE mvp;
+```
+
+### 3. Add your database details
+
+Create a file called `.env` in the main project folder:
+
+```text
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASS=YOUR_MYSQL_PASSWORD
 DB_NAME=mvp
-DB_PASS=YOUR_PASSWORD
-(replace YOUR_PASSWORD with your actual password)
+```
 
-Alternatively, you can rename the provided .env.example file to .env.
-Run npm run migrate in your terminal in order to create the DB tables.
+Replace `YOUR_MYSQL_PASSWORD` with your real MySQL password. `.env` is git-ignored, so your password stays private.
 
-Access the mySQL CLI:
+### 4. Create the tables
 
-MAC: Type mysql -u root -p into your terminal, enter your password when prompted.
-WINDOWS: Search for mySQL in windows search and open mySQL 8.0 Command Line Client. Enter you password when prompted.
-In the MySQL CLI, type create database todos; to create a database in MySQL.
+```bash
+npm run migrate
+```
 
+> ⚠️ This drops and recreates the `saved_meals` table, so running it again deletes any saved meals.
 
-6. Development: 
-Run npm start in project directory to start the Express server on port 4000 cd client and run npm run dev to start client server in development mode.
-Client is configured so all API calls will be proxied to port 4000 for a smoother development experience. Yay!
-You can test your client app in http://localhost:5173
-You can test your API in http://localhost:4000
+### 5. Run the app
 
+In one terminal, start the server (port 4000):
 
-7. Technologies Used
-	•	Frontend: React
-	•	Backend: Express
-	•	Database: MySQL
-	•	API: Spoonacular API
-	•	Styling: CSS
-	•	Testing: Postman
-	•	Development: Visual Studio Code
+```bash
+npm start
+```
+
+In a second terminal, start the client:
+
+```bash
+cd client
+npm run dev
+```
+
+Open **<http://localhost:5173>** in your browser. API calls from the client are automatically forwarded to the server on port 4000.
+
+---
+
+## 🔌 API
+
+All routes are under `/api/recipes`.
+
+| Method | Route              | Description            | Body                  |
+| ------ | ------------------ | ---------------------- | --------------------- |
+| GET    | `/api/recipes`     | List all saved meals   | none                  |
+| POST   | `/api/recipes`     | Save a meal            | `{ "title", "image" }` |
+| DELETE | `/api/recipes/:id` | Delete a saved meal    | none                  |
+
+### Database table: `saved_meals`
+
+| Column | Type         | Notes                    |
+| ------ | ------------ | ------------------------ |
+| id     | INT          | Primary key, auto-increment |
+| title  | VARCHAR(255) | Recipe name              |
+| image  | VARCHAR(255) | Recipe image URL         |
+
+---
+
+## 🧯 Troubleshooting
+
+| Problem | Fix |
+| ------- | --- |
+| **"Failed to save meal"** | Make sure the server is running (`npm start`) and your `.env` details are correct. |
+| **`Access denied for user 'root'`** | The password in `.env` is wrong or the file isn't saved. Restart the server after changing `.env`. |
+| **`Table 'mvp.saved_meals' doesn't exist`** | Run `npm run migrate`. |
+| **`Unknown database 'mvp'`** | Create it with `CREATE DATABASE mvp;` in MySQL. |
+
+---
+
+## 🌱 Future ideas
+
+- Show hearts as already filled for meals you saved before.
+- Recipe detail view with instructions and missing ingredients.
+- User accounts so everyone has their own saved meals.

@@ -34,7 +34,8 @@ function Homepage() {
   // create a function for appending the ingredients when we click the add button 
   function addNewIngredients(e){
     e.preventDefault();
-    setAddedIngredients(i => [...i, ingredientsInput]);
+    if (!ingredientsInput.trim()) return;
+    setAddedIngredients(i => [...i, ingredientsInput.trim()]);
     setIngredientsInput("");
   }
 
@@ -46,8 +47,9 @@ function Homepage() {
   }
 
   // function for the favourite button, it expects to receive the title and image when called 
+  // returns true/false so the heart button knows whether to show as saved
   const saveMeal = (title, image) => {
-    fetch("/api/recipes", {
+    return fetch("/api/recipes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -58,11 +60,12 @@ function Homepage() {
         if (!response.ok) {
           throw new Error("Failed to save meal");
         }
-        alert("Saved Meal!");
+        return true;
       })
       .catch((error) => {
         setError(error.message);
         console.error(error);
+        return false;
       });
   }
 
@@ -95,37 +98,35 @@ function Homepage() {
 
 
   return (
-    <> 
-    <p> Welcome to FoodieFinds, your ultimate destination for culinary inspiration! 
-      Explore a world of delightful meal ideas, all tailored to your pantry's ingredients.</p>
-    <h2> Find Meals With Your Ingredients 🍽️ </h2>
-  
-    <form>
-    <input name="text" type="text" className= "search-bar" placeholder = "Enter your ingredients" value = {ingredientsInput} onChange = {handleChange} /> 
-    <button onClick={(addNewIngredients)} className= "button"> Add </button>
+    <main className="page">
+    <section className="hero glass">
+      <h1 className="hero-title">Find meals with <span>your ingredients</span> 🍽️</h1>
+      <p className="hero-text">Welcome to FoodieFinds, your ultimate destination for culinary inspiration!
+        Explore a world of delightful meal ideas, all tailored to your pantry's ingredients.</p>
+    </section>
+
+    <form className="search-form glass" onSubmit={addNewIngredients}>
+      <input name="text" type="text" className="search-bar" placeholder="Enter your ingredients" value={ingredientsInput} onChange={handleChange} />
+      <button type="submit" className="btn">Add</button>
     </form>
-    <div>
-      <ul>
-        {addedIngredients.map((ingredient, index ) => (
-          <ul
-            key = {index}> {ingredient}
-            <button 
-            className = "delete-button" 
-            onClick = {() => deleteIngredients(index)}> ✖️ </button> 
-          </ul>
-        ))}
-      </ul>
-      <button onClick = {handleSubmit} className= "button" > 🔎 Find Recipes</button>
-      <div className= "error-message"> {error &&  
-        <h2> ERROR 404 : {error} </h2> }  </div>     
- 
-     <RecipesList recipes ={recipes} saveMeal={saveMeal} showSaveButton={true}/>
 
-    </div>
+    <ul className="chips">
+      {addedIngredients.map((ingredient, index) => (
+        <li key={index} className="chip glass">
+          {ingredient}
+          <button
+            className="chip-remove"
+            aria-label={`Remove ${ingredient}`}
+            onClick={() => deleteIngredients(index)}>✖️</button>
+        </li>
+      ))}
+    </ul>
+    <button onClick={handleSubmit} className="btn btn-accent find-button">🔎 Find Recipes</button>
+    {error && <div className="error-message glass">ERROR 404 : {error}</div>}
 
-    
-    </>
-    
+    <RecipesList recipes={recipes} saveMeal={saveMeal} showSaveButton={true}/>
+    </main>
+
   )
 }
 

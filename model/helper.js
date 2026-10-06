@@ -1,7 +1,8 @@
 require("dotenv").config();
-const mysql = require("mysql");
+// mysql2 supports the caching_sha2_password login used by MySQL 8+ (the old `mysql` package does not)
+const mysql = require("mysql2");
 
-module.exports = async function db(query) {
+module.exports = async function db(query, params = []) {
   const results = {
     data: [],
     error: null
@@ -21,10 +22,15 @@ module.exports = async function db(query) {
     });
 
     con.connect(function(err) {
-      if (err) throw err;
+      // reject instead of throwing so a DB problem returns a 500 rather than crashing the server
+      if (err) {
+        console.log(err);
+        reject(err);
+        return;
+      }
       console.log("Connected!");
 
-      con.query(query, function(err, result) {
+      con.query(query, params, function(err, result) {
         if (err) {
           results.error = err;
           console.log(err);
@@ -33,25 +39,14 @@ module.exports = async function db(query) {
           return;
         }
 
-        if (!result.length) {
-          if (result.affectedRows === 0) {
-            results.error = "Action not complete";
-            console.log(err);
-            reject(err);
-            con.end();
-            return;
-          }
-
-          // push the result (which should be an OkPacket) to data
-          // germinal - removed next line because it returns an array in an array when empty set
-          // results.data.push(result);
-        } else if (result[0].constructor.name == "RowDataPacket") {
-          // push each row (RowDataPacket) to data
+        if (Array.isArray(result)) {
+          // SELECT: push each row to data
           result.forEach(row => results.data.push(row));
-        } else if (result[0].constructor.name == "OkPacket") {
-          // push the first item in result list to data (this accounts for situations
-          // such as when the query ends with SELECT LAST_INSERT_ID() and returns an insertId)
-          results.data.push(result[0]);
+        } else if (result.affectedRows === 0) {
+          results.error = "Action not complete";
+          reject(results.error);
+          con.end();
+          return;
         }
 
         con.end();
