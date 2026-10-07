@@ -40,7 +40,7 @@ async function cacheRecipes(recipes) {
 }
 
 // savedMeals: rows from saved_meals ({ id, spoonacular_id, is_custom })
-// returns Map of saved meal id -> { names: [...], minutes }
+// returns Map of saved meal id -> { names: [...], aisles: [aisle per name], minutes }
 // fetches only Spoonacular recipes that aren't cached yet (one call for all of them)
 async function ingredientsForMeals(savedMeals) {
   const result = new Map();
@@ -59,10 +59,15 @@ async function ingredientsForMeals(savedMeals) {
 
     const [recipes, ingredients] = await Promise.all([
       db('SELECT spoonacular_id, ready_in_minutes FROM cached_recipes WHERE spoonacular_id IN (?);', [spoonacularIds]),
-      db('SELECT spoonacular_id, name FROM cached_recipe_ingredients WHERE spoonacular_id IN (?);', [spoonacularIds]),
+      db('SELECT spoonacular_id, name, aisle FROM cached_recipe_ingredients WHERE spoonacular_id IN (?);', [spoonacularIds]),
     ]);
-    const bySpoonacular = new Map(recipes.data.map((r) => [r.spoonacular_id, { names: [], minutes: r.ready_in_minutes }]));
-    for (const row of ingredients.data) bySpoonacular.get(row.spoonacular_id)?.names.push(row.name);
+    const bySpoonacular = new Map(recipes.data.map((r) => [r.spoonacular_id, { names: [], aisles: [], minutes: r.ready_in_minutes }]));
+    for (const row of ingredients.data) {
+      const recipe = bySpoonacular.get(row.spoonacular_id);
+      if (!recipe) continue;
+      recipe.names.push(row.name);
+      recipe.aisles.push(row.aisle);
+    }
     for (const meal of savedMeals) {
       if (meal.spoonacular_id && bySpoonacular.has(meal.spoonacular_id)) result.set(meal.id, bySpoonacular.get(meal.spoonacular_id));
     }
@@ -75,7 +80,10 @@ async function ingredientsForMeals(savedMeals) {
     for (const row of rows.data) {
       byMeal.get(row.saved_meal_id).extendedIngredients.push({ name: row.name, nameClean: row.name, originalName: row.name, image: row.image, aisle: row.aisle });
     }
-    for (const [id, recipe] of byMeal) result.set(id, { names: [...recipeShoppingNames(recipe).keys()], minutes: null });
+    for (const [id, recipe] of byMeal) {
+      const names = recipeShoppingNames(recipe);
+      result.set(id, { names: [...names.keys()], aisles: [...names.values()], minutes: null });
+    }
   }
 
   return result;

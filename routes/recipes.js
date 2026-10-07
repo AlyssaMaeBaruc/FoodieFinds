@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const db = require('../model/helper');
+const { suggestTagsForMeals, tagsByMeal } = require('../model/mealTags');
 
 
 // /* GET users listing. */
@@ -35,15 +36,59 @@ console.error('Error on saving recipe', err);
 });
 
 
-// GET ALL THE FAVOURITED OR SAVED MEALS 
+// GET ALL THE FAVOURITED OR SAVED MEALS (each with its tags)
 
 router.get("/", async function(req, res, next) {
+  let meals;
+  try {
+    meals = (await db("SELECT * FROM saved_meals;")).data;
+  } catch (err) {
+    return res.status(500).send(err);
+  }
 
-  db("SELECT * FROM saved_meals;")
-    .then((results) => {
-      res.send(results.data);
-    })
-    .catch((err) => res.status(500).send(err));
+  // tags are extra: if they fail (e.g. migration 007 not run yet), still send the meals
+  try {
+    // meals saved since the last visit get suggested tags once
+    const untagged = meals.filter((meal) => !meal.tags_suggested);
+    if (untagged.length > 0) await suggestTagsForMeals(untagged);
+    const tags = await tagsByMeal();
+    res.send(meals.map((meal) => ({ ...meal, tags: tags.get(meal.id) ?? [] })));
+  } catch (err) {
+    console.error('Error loading meal tags', err);
+    res.send(meals.map((meal) => ({ ...meal, tags: [] })));
+  }
+});
+
+// SET A MEAL'S TAGS: { tag_ids: [1, 4] } (replaces its tags; suggestions never run on it again)
+router.put("/:id/tags", async function(req, res) {
+  const id = Number(req.params.id);
+  const { tag_ids: tagIds } = req.body;
+  if (!Number.isInteger(id) || !Array.isArray(tagIds) || tagIds.length > 50 || !tagIds.every(Number.isInteger)) {
+    return res.status(400).send({ message: 'tag_ids must be a list of tag ids' });
+  }
+  const uniqueIds = [...new Set(tagIds)];
+  try {
+    const statements = [
+      'START TRANSACTION;',
+      'UPDATE saved_meals SET tags_suggested = TRUE WHERE id = ?;',
+      'DELETE FROM meal_tags WHERE saved_meal_id = ?;',
+    ];
+    const params = [id, id];
+    if (uniqueIds.length > 0) {
+      // only tags that exist (one may have just been deleted in another tab)
+      statements.push('INSERT INTO meal_tags (saved_meal_id, tag_id) SELECT ?, id FROM tags WHERE id IN (?);');
+      params.push(id, uniqueIds);
+    }
+    statements.push('COMMIT;');
+    const found = await db('SELECT id FROM saved_meals WHERE id = ?;', [id]);
+    if (found.data.length === 0) return res.status(404).send({ message: 'That meal is no longer saved' });
+    await db(statements.join('\n'), params);
+    const tags = await tagsByMeal();
+    res.send({ id, tags: tags.get(id) ?? [] });
+  } catch (err) {
+    console.error('Error saving meal tags', err);
+    res.status(500).send({ message: "Couldn't save the tags. Please try again." });
+  }
 });
  
 

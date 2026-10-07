@@ -3,6 +3,8 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists meal_tags;
+DROP TABLE if exists tags;
 DROP TABLE if exists cached_recipe_ingredients;
 DROP TABLE if exists cached_recipes;
 DROP TABLE if exists ingredient_translations;
@@ -25,6 +27,7 @@ CREATE TABLE saved_meals (
     source_url VARCHAR(1000) NULL,
     steps JSON NULL,
     is_custom BOOLEAN NOT NULL DEFAULT FALSE,
+    tags_suggested BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT uq_saved_meals_spoonacular_id UNIQUE (spoonacular_id)
     );
 
@@ -94,3 +97,25 @@ CREATE TABLE cached_recipe_ingredients (
     CONSTRAINT fk_cached_ingredients_recipe
         FOREIGN KEY (spoonacular_id) REFERENCES cached_recipes(spoonacular_id) ON DELETE CASCADE
     );
+
+-- tags on saved meals; each meal gets suggested tags once (saved_meals.tags_suggested)
+CREATE TABLE tags (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(30) NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT uq_tags_name UNIQUE (name)
+    );
+
+CREATE TABLE meal_tags (
+    saved_meal_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (saved_meal_id, tag_id),
+    CONSTRAINT fk_meal_tags_saved_meal
+        FOREIGN KEY (saved_meal_id) REFERENCES saved_meals(id) ON DELETE CASCADE,
+    CONSTRAINT fk_meal_tags_tag
+        FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    );
+
+INSERT INTO tags (name, is_default) VALUES
+    ('fish', TRUE), ('seafood', TRUE), ('chicken', TRUE), ('beef', TRUE), ('pork', TRUE),
+    ('veggie', TRUE), ('eggs', TRUE), ('pasta', TRUE), ('rice', TRUE), ('salad', TRUE);

@@ -10,6 +10,7 @@ var recipesRouter = require('./routes/recipes');
 var mealPlanRouter = require('./routes/mealPlan');
 var shoppingListRouter = require('./routes/shoppingList');
 var customRecipesRouter = require('./routes/customRecipes');
+var tagsRouter = require('./routes/tags');
 
 // var indexRouter = require('./routes/index');
 // var usersRouter = require('./routes/users');
@@ -32,6 +33,7 @@ app.use('/api/recipes', recipesRouter);
 app.use('/api/meal-plan', mealPlanRouter);
 app.use('/api/shopping-list', shoppingListRouter);
 app.use('/api/custom-recipes', customRecipesRouter);
+app.use('/api/tags', tagsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

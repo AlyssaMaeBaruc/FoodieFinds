@@ -2013,3 +2013,156 @@
     top: 64px;
   }
 }
+
+/* ---------- Meal tags ---------- */
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.tag-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--brown-faint);
+  color: var(--brown);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.tag-edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px dashed var(--hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brown-soft);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.tag-edit-button:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+/* Edit tags pop-up (same frosted look as Add recipe) */
+.tag-editor {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  color: var(--brown);
+  background: rgba(253, 248, 242, 0.94);
+  border-radius: var(--radius-lg);
+}
+
+.tag-editor[open] {
+  animation: chooser-in 0.25s var(--ease);
+}
+
+.tag-editor::backdrop {
+  background: rgba(63, 38, 24, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.tag-editor-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  text-align: left;
+}
+
+.tag-editor-meal {
+  margin: -6px 0 0;
+  font-size: 0.9rem;
+  color: var(--brown-soft);
+}
+
+.tag-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-option {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--glass-strong);
+  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.tag-option.is-on {
+  background: linear-gradient(135deg, #ee8150, var(--accent-hover));
+  border-color: transparent;
+  color: #fff;
+}
+
+.tag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.tag-delete {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 5px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--brown-faint);
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.tag-option.is-on .tag-delete {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.tag-option.is-armed .tag-delete {
+  padding: 0 8px;
+  background: var(--danger);
+  color: #fff;
+}
+
+.tag-new {
+  display: flex;
+  gap: 8px;
+}
+
+.tag-new-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--brown);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.tag-new-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import RecipesList from '../components/RecipesList'; 
 import AddToWeekPicker from '../components/AddToWeekPicker';
 import AddRecipeDialog from '../components/AddRecipeDialog';
+import TagEditor from '../components/TagEditor';
 import Icon from '../components/Icon';
 
 
@@ -19,6 +20,10 @@ function FavouriteMeals() {
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState(null);
+
+    // every tag, and the meal whose tags are being edited
+    const [tags, setTags] = useState([]);
+    const [editingMeal, setEditingMeal] = useState(null);
 
 
   const listOfSavedMeals = () => {
@@ -38,7 +43,35 @@ fetch("/api/recipes")
       //so for this page, it should be updated once it loads, once a user favourites a new meal. then it should appear 
       useEffect (() => {
         listOfSavedMeals();
+        fetch("/api/tags")
+          .then((res) => (res.ok ? res.json() : []))
+          .then(setTags)
+          .catch((error) => console.error("Error loading tags", error));
       }, []);
+
+      // a tag was created or deleted: deleted ones come off every meal too
+      const tagsChanged = (nextTags) => {
+        setTags(nextTags);
+        const ids = new Set(nextTags.map((tag) => tag.id));
+        setMealList((current) => current.map((meal) => ({ ...meal, tags: (meal.tags ?? []).filter((tag) => ids.has(tag.id)) })));
+      };
+
+      const tagsSaved = (mealId, mealTags) => {
+        setMealList((current) => current.map((meal) => (meal.id === mealId ? { ...meal, tags: mealTags } : meal)));
+        setEditingMeal(null);
+      };
+
+      // tag chips under the title, ending with the button that opens the editor
+      const renderTags = (meal) => (
+        <span className="card-tags">
+          {(meal.tags ?? []).map((tag) => <span key={tag.id} className="tag-chip">{tag.name}</span>)}
+          {!selecting && (
+            <button className="tag-edit-button" onClick={() => setEditingMeal(meal)} aria-label={`Edit tags for ${meal.title}`}>
+              <Icon name="tag" size={12} /> {meal.tags?.length ? "Edit" : "Add tags"}
+            </button>
+          )}
+        </span>
+      );
 
 
       const stopSelecting = () => {
@@ -153,7 +186,15 @@ fetch("/api/recipes")
               recipes={mealList}
               showSaveButton={false}
               renderActions={(meal) => <AddToWeekPicker meal={meal} />}
+              renderMeta={renderTags}
               selection={selecting ? { selectedIds, onToggle: toggleSelected } : undefined}
+            />
+            <TagEditor
+              meal={editingMeal}
+              tags={tags}
+              onClose={() => setEditingMeal(null)}
+              onTagsChanged={tagsChanged}
+              onSaved={tagsSaved}
             />
             <AddRecipeDialog
               open={adding}
