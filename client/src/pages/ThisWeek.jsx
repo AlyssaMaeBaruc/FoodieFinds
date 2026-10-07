@@ -3,8 +3,22 @@ import { Link } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import MealChooser from "../components/MealChooser";
 import Icon from "../components/Icon";
+import GradeBadge from "../components/GradeBadge";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
 import { todayText, weekTitle, SLOTS } from "../week";
+
+const GRADES = ["A", "B", "C", "D", "E"];
+const isGood = (grade) => grade === "A" || grade === "B";
+// the A/B goal can be set from 1 to 14 (two meals a day)
+const GOAL_MIN = 1;
+const GOAL_MAX = 14;
+
+// "A 2 · B 1 · C 3": how many meals have each grade
+function gradeCounts(meals) {
+  const counts = Object.fromEntries(GRADES.map((grade) => [grade, 0]));
+  for (const meal of meals) if (counts[meal.grade] !== undefined) counts[meal.grade] += 1;
+  return counts;
+}
 
 // Monday to Sunday view of the meal plan, with lunch and dinner for each day.
 // ?week=YYYY-MM-DD picks another week, so Back from a recipe returns to the same week
@@ -33,6 +47,42 @@ function ThisWeek() {
   // meals already shown in each slot while shuffling, so shuffles don't bounce back
   const [triedIds, setTriedIds] = useState({});
   const [previewNote, setPreviewNote] = useState(null);
+
+  // weekly rules (the same for every week): { min_good_grades: { value, enabled } }
+  const [rules, setRules] = useState(null);
+  const [rulesError, setRulesError] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/weekly-rules")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Couldn't load your weekly rules."))))
+      .then(setRules)
+      .catch((err) => {
+        setRulesError(err.message);
+        console.error(err);
+      });
+  }, []);
+
+  // saves straight away; shows the change first and puts it back if saving fails
+  const saveRule = async (type, change) => {
+    const before = rules;
+    const next = { ...rules[type], ...change };
+    setRules({ ...rules, [type]: next });
+    setRulesError(null);
+    try {
+      const res = await fetch("/api/weekly-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, ...next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Couldn't save that rule. Please try again.");
+      setRules(data);
+    } catch (err) {
+      setRules(before);
+      setRulesError(err.message);
+      console.error(err);
+    }
+  };
 
   // a different week means different slots: drop any preview
   useEffect(() => {
@@ -230,6 +280,16 @@ function ThisWeek() {
   const lastWeekCount = preview?.suggestions.filter((s) => s.from_last_week).length ?? 0;
   const [firstWord, ...rest] = weekTitle(offset, weekDays).split(" ");
 
+  // the week's mix of health grades; suggestions count separately while previewing
+  const goodGoal = rules?.min_good_grades;
+  const plannedGood = meals.filter((meal) => isGood(meal.grade)).length;
+  const suggestedGood = preview?.suggestions.filter((s) => isGood(s.grade)).length ?? 0;
+  const mixMeals = [...meals, ...(preview?.suggestions ?? [])];
+  const mix = gradeCounts(mixMeals);
+  const ungraded = mixMeals.filter((meal) => !meal.grade).length;
+  const goalReached = goodGoal?.enabled && plannedGood + suggestedGood >= goodGoal.value;
+  const goal = preview?.goal;
+
   return (
     <main className="page page-wide">
       <section className="hero">
@@ -242,6 +302,67 @@ function ThisWeek() {
       </section>
 
       <WeekNav offset={offset} goToWeek={goToWeek} goToThisWeek={goToThisWeek} />
+
+      {!loading && (
+        <section className="week-health glass">
+          <p className="week-mix">
+            <strong>{plannedGood} A/B {plannedGood === 1 ? "meal" : "meals"}</strong> this week
+            {preview && suggestedGood > 0 && <> · <strong>{plannedGood + suggestedGood}</strong> with suggestions</>}
+            {goodGoal?.enabled && (
+              <span className={`goal-status${goalReached ? " is-reached" : ""}`}>
+                {goalReached && <Icon name="check" size={13} />} goal {goodGoal.value}
+              </span>
+            )}
+          </p>
+          {mixMeals.length > 0 && (
+            <ul className="mix-counts" aria-label="Meals by health grade">
+              {GRADES.filter((grade) => mix[grade] > 0).map((grade) => (
+                <li key={grade}><GradeBadge grade={grade} inline /> {mix[grade]}</li>
+              ))}
+              {ungraded > 0 && <li className="mix-ungraded">{ungraded} not graded</li>}
+            </ul>
+          )}
+
+          <details className="rules-drawer">
+            <summary className="rules-summary">
+              Weekly rules
+              <Icon name="arrowRight" size={14} className="drawer-chevron" />
+            </summary>
+            {goodGoal && (
+              <div className="rule-row">
+                <label className="rule-switch">
+                  <input
+                    type="checkbox"
+                    checked={goodGoal.enabled}
+                    onChange={(e) => saveRule("min_good_grades", { enabled: e.target.checked })}
+                  />
+                  <span>At least</span>
+                </label>
+                <span className="stepper">
+                  <button
+                    type="button"
+                    className="stepper-button"
+                    onClick={() => saveRule("min_good_grades", { value: goodGoal.value - 1 })}
+                    disabled={goodGoal.value <= GOAL_MIN}
+                    aria-label="Fewer meals"
+                  >−</button>
+                  <span className="stepper-value" aria-live="polite">{goodGoal.value}</span>
+                  <button
+                    type="button"
+                    className="stepper-button"
+                    onClick={() => saveRule("min_good_grades", { value: goodGoal.value + 1 })}
+                    disabled={goodGoal.value >= GOAL_MAX}
+                    aria-label="More meals"
+                  >+</button>
+                </span>
+                <span>meals graded <GradeBadge grade="A" inline /> or <GradeBadge grade="B" inline /></span>
+              </div>
+            )}
+            <p className="rule-hint">Fill my week always prefers healthier meals; with this rule on, it makes sure the week reaches the goal.</p>
+            {rulesError && <p className="picker-error">{rulesError}</p>}
+          </details>
+        </section>
+      )}
 
       {!preview && !loading && (
         <div className="fill-row">
@@ -268,6 +389,13 @@ function ThisWeek() {
               {lastWeekCount > 0 && ` ${lastWeekCount} reused from last week.`}
               {unfilledCount > 0 && ` ${unfilledCount} ${unfilledCount === 1 ? "slot is" : "slots are"} still empty: save more recipes to fill them.`}
             </p>
+            {goal && (goal.count >= goal.target ? (
+              <p className="preview-notes"><Icon name="check" size={13} /> {goal.count} A/B meals, meeting your goal of {goal.target}.</p>
+            ) : (
+              <p className="preview-warning">
+                <Icon name="alert" size={14} /> This week reaches {goal.count} of your {goal.target} A/B goal: only {goal.good_in_library} of your saved meals {goal.good_in_library === 1 ? "is" : "are"} graded A or B. Save healthier recipes, or change a grade on My Saved Meals.
+              </p>
+            ))}
             {previewNote && <p className="preview-warning"><Icon name="alert" size={14} /> {previewNote}</p>}
           </div>
           <div className="preview-actions">
@@ -308,6 +436,7 @@ function ThisWeek() {
                       image={meal.image}
                       spoonacularId={meal.spoonacular_id}
                       link={meal.spoonacular_id ? undefined : `/my-recipe/${meal.saved_meal_id}`}
+                      badge={meal.grade && <GradeBadge grade={meal.grade} source={meal.grade_source} />}
                       meta={<><Icon name="utensils" size={14} /> {meal.servings} {meal.servings === 1 ? "portion" : "portions"}</>}
                     >
                       {!preview && (
@@ -323,6 +452,7 @@ function ThisWeek() {
                       image={suggestion.image}
                       spoonacularId={suggestion.spoonacular_id}
                       link={suggestion.spoonacular_id ? undefined : `/my-recipe/${suggestion.saved_meal_id}`}
+                      badge={suggestion.grade && <GradeBadge grade={suggestion.grade} />}
                       mediaAction={
                         <>
                           <span className="suggested-badge">{suggestion.repeat ? "Repeat" : "Suggested"}</span>

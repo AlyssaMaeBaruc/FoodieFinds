@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './Icon';
 import RecipeImage from './RecipeImage';
+import GradeBadge from './GradeBadge';
 
 // pop-up listing saved meals, used to fill an empty slot on the This Week page.
 // target = { label: "Tue 6 Oct", slot: "lunch" } while open, null when closed
@@ -70,6 +71,7 @@ function MealChooser({ target, savedMeals, loading, busy, error, onPick, onClose
                 <button className="chooser-item" disabled={busy} onClick={() => onPick(meal)}>
                   <RecipeImage src={meal.image} />
                   <span>{meal.title}</span>
+                  <GradeBadge grade={meal.grade} inline />
                 </button>
               </li>
             ))}

@@ -3,6 +3,7 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists weekly_rules;
 DROP TABLE if exists meal_tags;
 DROP TABLE if exists tags;
 DROP TABLE if exists cached_recipe_ingredients;
@@ -28,6 +29,9 @@ CREATE TABLE saved_meals (
     steps JSON NULL,
     is_custom BOOLEAN NOT NULL DEFAULT FALSE,
     tags_suggested BOOLEAN NOT NULL DEFAULT FALSE,
+    health_score TINYINT UNSIGNED NULL,
+    health_checked BOOLEAN NOT NULL DEFAULT FALSE,
+    grade_override CHAR(1) NULL,
     CONSTRAINT uq_saved_meals_spoonacular_id UNIQUE (spoonacular_id)
     );
 
@@ -86,6 +90,8 @@ CREATE TABLE ingredient_translations (
 CREATE TABLE cached_recipes (
     spoonacular_id INT PRIMARY KEY,
     ready_in_minutes INT NULL,
+    health_score TINYINT UNSIGNED NULL,
+    health_checked BOOLEAN NOT NULL DEFAULT FALSE,
     fetched_at DATETIME NOT NULL
     );
 
@@ -119,3 +125,12 @@ CREATE TABLE meal_tags (
 INSERT INTO tags (name, is_default) VALUES
     ('fish', TRUE), ('seafood', TRUE), ('chicken', TRUE), ('beef', TRUE), ('pork', TRUE),
     ('veggie', TRUE), ('eggs', TRUE), ('pasta', TRUE), ('rice', TRUE), ('salad', TRUE);
+
+-- rules for every week, e.g. "at least 4 meals graded A or B"
+CREATE TABLE weekly_rules (
+    type VARCHAR(40) PRIMARY KEY,
+    value INT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE
+    );
+
+INSERT INTO weekly_rules (type, value, enabled) VALUES ('min_good_grades', 4, FALSE);

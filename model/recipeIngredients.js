@@ -24,11 +24,14 @@ async function cacheRecipes(recipes) {
   const params = [];
   for (const recipe of recipes) {
     statements.push(
-      `INSERT INTO cached_recipes (spoonacular_id, ready_in_minutes, fetched_at) VALUES (?, ?, NOW()) AS new
-       ON DUPLICATE KEY UPDATE ready_in_minutes = new.ready_in_minutes, fetched_at = new.fetched_at;`,
+      `INSERT INTO cached_recipes (spoonacular_id, ready_in_minutes, health_score, health_checked, fetched_at)
+       VALUES (?, ?, ?, TRUE, NOW()) AS new
+       ON DUPLICATE KEY UPDATE ready_in_minutes = new.ready_in_minutes, health_score = new.health_score,
+         health_checked = TRUE, fetched_at = new.fetched_at;`,
       'DELETE FROM cached_recipe_ingredients WHERE spoonacular_id = ?;'
     );
-    params.push(recipe.id, Number.isInteger(recipe.readyInMinutes) ? recipe.readyInMinutes : null, recipe.id);
+    const score = Number.isFinite(recipe.healthScore) ? Math.round(Math.min(100, Math.max(0, recipe.healthScore))) : null;
+    params.push(recipe.id, Number.isInteger(recipe.readyInMinutes) ? recipe.readyInMinutes : null, score, recipe.id);
     const names = [...recipeShoppingNames(recipe)];
     if (names.length > 0) {
       statements.push(`INSERT INTO cached_recipe_ingredients (spoonacular_id, name, aisle) VALUES ${names.map(() => '(?, ?, ?)').join(', ')};`);
@@ -41,7 +44,8 @@ async function cacheRecipes(recipes) {
 
 // savedMeals: rows from saved_meals ({ id, spoonacular_id, is_custom })
 // returns Map of saved meal id -> { names: [...], aisles: [aisle per name], minutes }
-// fetches only Spoonacular recipes that aren't cached yet (one call for all of them)
+// fetches only Spoonacular recipes that aren't cached yet, or were cached before health scores
+// were stored (one call for all of them)
 async function ingredientsForMeals(savedMeals) {
   const result = new Map();
   const spoonacularIds = [...new Set(savedMeals.filter((m) => m.spoonacular_id).map((m) => m.spoonacular_id))];
@@ -49,7 +53,7 @@ async function ingredientsForMeals(savedMeals) {
 
   // Spoonacular recipes: fetch the uncached ones, then read everything from the cache
   if (spoonacularIds.length > 0) {
-    const cached = await db('SELECT spoonacular_id FROM cached_recipes WHERE spoonacular_id IN (?);', [spoonacularIds]);
+    const cached = await db('SELECT spoonacular_id FROM cached_recipes WHERE spoonacular_id IN (?) AND health_checked = TRUE;', [spoonacularIds]);
     const cachedIds = new Set(cached.data.map((row) => row.spoonacular_id));
     const missing = spoonacularIds.filter((id) => !cachedIds.has(id));
     if (missing.length > 0) {

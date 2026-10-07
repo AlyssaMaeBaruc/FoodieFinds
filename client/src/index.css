@@ -9,6 +9,13 @@
   --cream: #fbf4ec;
   --danger: #b3261e;
 
+  /* health grades A-E */
+  --grade-a: #1e7b3a;
+  --grade-b: #7cb93e;
+  --grade-c: #f2c12e;
+  --grade-d: #ee8a2b;
+  --grade-e: #d7392b;
+
   /* frosted glass surfaces */
   --glass: rgba(255, 255, 255, 0.55);
   --glass-strong: rgba(255, 255, 255, 0.78);

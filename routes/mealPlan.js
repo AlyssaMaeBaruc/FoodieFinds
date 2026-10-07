@@ -6,6 +6,8 @@ const { ingredientsForMeals } = require('../model/recipeIngredients');
 const { fillWeek } = require('../model/fillWeek');
 const { isPantryBasic } = require('../model/pantryBasics');
 const { SpoonacularError } = require('../model/spoonacular');
+const { withGrade, HEALTH_COLUMNS, HEALTH_JOIN } = require('../model/healthGrade');
+const { loadRules } = require('../model/weeklyRules');
 
 const SLOTS = ['lunch', 'dinner'];
 
@@ -21,14 +23,15 @@ router.get('/', async function (req, res) {
   try {
     const result = await db(
       `SELECT mp.id, DATE_FORMAT(mp.plan_date, '%Y-%m-%d') AS plan_date, mp.slot, mp.servings,
-              mp.saved_meal_id, sm.title, sm.image, sm.spoonacular_id
+              mp.saved_meal_id, sm.title, sm.image, sm.spoonacular_id, ${HEALTH_COLUMNS}
        FROM meal_plan mp
        JOIN saved_meals sm ON sm.id = mp.saved_meal_id
+       ${HEALTH_JOIN}
        WHERE mp.plan_date BETWEEN ? AND ?
        ORDER BY mp.plan_date, mp.slot;`,
       [start, end]
     );
-    res.send({ week_start: start, week_end: end, meals: result.data });
+    res.send({ week_start: start, week_end: end, meals: result.data.map(withGrade) });
   } catch (err) {
     console.error('Error loading meal plan', err);
     res.status(500).send(err);
@@ -138,6 +141,12 @@ router.post('/suggest', async function (req, res) {
 
     // ingredients for every saved meal (cached; only new Spoonacular recipes cost points)
     const ingredients = await ingredientsForMeals(saved.data);
+    // read after the ingredients, which may have just fetched a new recipe's score
+    const [scores, rules] = await Promise.all([
+      db(`SELECT sm.id, ${HEALTH_COLUMNS} FROM saved_meals sm ${HEALTH_JOIN};`),
+      loadRules(),
+    ]);
+    const grades = new Map(scores.data.map((row) => [row.id, withGrade(row).grade]));
     const library = saved.data.map((meal) => {
       const info = ingredients.get(meal.id) ?? { names: [], minutes: null };
       return {
@@ -149,8 +158,10 @@ router.post('/suggest', async function (req, res) {
         // pantry basics don't count when comparing recipes
         ingredients: info.names.filter((name) => !isPantryBasic(name)),
         minutes: info.minutes,
+        grade: grades.get(meal.id) ?? null,
       };
     });
+    const goodGoal = rules.min_good_grades;
 
     const result = fillWeek({
       library,
@@ -158,12 +169,13 @@ router.post('/suggest', async function (req, res) {
       slots,
       lastWeekIds: new Set(lastWeek.data.map((row) => row.saved_meal_id)),
       avoidIds,
+      minGood: goodGoal.enabled ? goodGoal.value : null,
     });
     res.send({ ...result, library_size: library.length });
   } catch (err) {
     if (err instanceof SpoonacularError) return res.status(err.status).send({ message: err.message });
     // a migration hasn't been run yet (e.g. 006 creates the ingredient cache)
-    if (err.code === 'ER_NO_SUCH_TABLE') {
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR') {
       return res.status(500).send({ message: 'The database is missing a table. Run the latest migration in model/migrations, then try again.' });
     }
     console.error('Error suggesting meals', err);

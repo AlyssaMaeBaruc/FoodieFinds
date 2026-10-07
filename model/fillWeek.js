@@ -2,6 +2,8 @@
 // easy to make with what the week already needs (so the shopping list stays short).
 // Pure functions (no database or network) so they are easy to test.
 
+const { isGoodGrade } = require('./healthGrade');
+
 // --- Tuning (edit freely) ------------------------------------------------------
 const WEIGHTS = {
   coverage: 3,        // x share of the recipe's ingredients already being bought (0..1)
@@ -10,12 +12,17 @@ const WEIGHTS = {
   quick: 0.4,          // ready in 30 minutes or less (0.2 for up to 45)
   repeat: -1.5,        // meal is already in the week once (cook once, eat twice)
   lastWeek: -1.5,      // meal was planned the week before
+  // health grade: a nudge towards healthier meals (never outweighs sharing ingredients)
+  grade: { A: 0.6, B: 0.3, C: 0, D: -0.3, E: -0.6 },
 };
 const MAX_USES_PER_WEEK = 2;
 // pick randomly among this many best candidates, favouring the best...
 const TOP_CHOICES = [0.6, 0.3, 0.1];
 // ...but only among those scoring within this much of the best one
 const MAX_SCORE_GAP = 1;
+// the A/B goal starts choosing only A/B meals this many slots before it strictly has to,
+// so a meal that can't repeat on the same day doesn't make it miss the goal at the end
+const GOAL_SLACK = 2;
 // -----------------------------------------------------------------------------
 
 function easyBonus(meal) {
@@ -39,6 +46,7 @@ function scoreMeal(meal, weekIngredients, uses, lastWeekIds) {
   let score = WEIGHTS.coverage * coverage + WEIGHTS.newIngredient * added.length + easyBonus(meal);
   if (uses > 0) score += WEIGHTS.repeat;
   if (lastWeekIds.has(meal.saved_meal_id)) score += WEIGHTS.lastWeek;
+  score += WEIGHTS.grade[meal.grade] ?? 0;
   return { score, shared, added };
 }
 
@@ -55,20 +63,25 @@ function pickTop(scored, random) {
   return top[top.length - 1];
 }
 
-// library: [{ saved_meal_id, title, image, spoonacular_id, is_custom, ingredients: [names], minutes }]
+// library: [{ saved_meal_id, title, image, spoonacular_id, is_custom, ingredients: [names], minutes, grade }]
 //          (ingredients already without pantry basics)
 // fixed:   [{ plan_date, saved_meal_id }] meals already in the week (planned + suggestions being kept)
 // slots:   [{ plan_date, slot }] empty slots to fill, in the order to fill them
 // avoidIds: saved meal ids not to suggest (e.g. what a shuffled slot had before)
-// returns { suggestions: [...], unfilled: [{ plan_date, slot }] }
-function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = new Set(), random = Math.random }) {
+// minGood:  weekly rule "at least this many meals graded A or B" (null = off)
+// returns { suggestions: [...], unfilled: [{ plan_date, slot }],
+//           goal: { target, count, good_in_library } when minGood is set, else null }
+function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = new Set(), minGood = null, random = Math.random }) {
   const byId = new Map(library.map((meal) => [meal.saved_meal_id, meal]));
+  const isGood = (id) => isGoodGrade(byId.get(id)?.grade);
+  let goodCount = 0;
   const uses = new Map();
   const weekIngredients = new Map();
   // date -> meal ids on that day, so a meal is never eaten twice the same day
   const byDate = new Map();
   const addToWeek = (id, date) => {
     uses.set(id, (uses.get(id) ?? 0) + 1);
+    if (isGood(id)) goodCount += 1;
     for (const name of byId.get(id)?.ingredients ?? []) weekIngredients.set(name, (weekIngredients.get(name) ?? 0) + 1);
     if (!byDate.has(date)) byDate.set(date, new Set());
     byDate.get(date).add(id);
@@ -77,18 +90,25 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
 
   const suggestions = [];
   const unfilled = [];
-  for (const slot of slots) {
+  slots.forEach((slot, index) => {
     const sameDay = byDate.get(slot.plan_date) ?? new Set();
-    const scored = library
-      .filter((meal) => (uses.get(meal.saved_meal_id) ?? 0) < MAX_USES_PER_WEEK
-        && !avoidIds.has(meal.saved_meal_id)
-        && !sameDay.has(meal.saved_meal_id))
+    let candidates = library.filter((meal) => (uses.get(meal.saved_meal_id) ?? 0) < MAX_USES_PER_WEEK
+      && !avoidIds.has(meal.saved_meal_id)
+      && !sameDay.has(meal.saved_meal_id));
+    // the A/B goal needs (nearly) every remaining slot: only A/B meals from here (if any fit)
+    const slotsLeft = slots.length - index;
+    const goodNeeded = minGood === null ? 0 : minGood - goodCount;
+    if (goodNeeded > 0 && goodNeeded + GOAL_SLACK >= slotsLeft) {
+      const good = candidates.filter((meal) => isGoodGrade(meal.grade));
+      if (good.length > 0) candidates = good;
+    }
+    const scored = candidates
       .map((meal) => ({ meal, ...scoreMeal(meal, weekIngredients, uses.get(meal.saved_meal_id) ?? 0, lastWeekIds) }))
       .sort((a, b) => b.score - a.score);
 
     if (scored.length === 0) {
       unfilled.push(slot);
-      continue;
+      return;
     }
     const choice = pickTop(scored, random);
     suggestions.push({
@@ -103,10 +123,16 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
       minutes: choice.meal.minutes,
       repeat: (uses.get(choice.meal.saved_meal_id) ?? 0) > 0,
       from_last_week: lastWeekIds.has(choice.meal.saved_meal_id),
+      grade: choice.meal.grade ?? null,
     });
     addToWeek(choice.meal.saved_meal_id, slot.plan_date);
-  }
-  return { suggestions, unfilled };
+  });
+  const goal = minGood === null ? null : {
+    target: minGood,
+    count: goodCount,
+    good_in_library: library.filter((meal) => isGoodGrade(meal.grade)).length,
+  };
+  return { suggestions, unfilled, goal };
 }
 
 module.exports = { fillWeek, scoreMeal, WEIGHTS };

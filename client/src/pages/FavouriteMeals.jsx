@@ -5,6 +5,8 @@ import RecipesList from '../components/RecipesList';
 import AddToWeekPicker from '../components/AddToWeekPicker';
 import AddRecipeDialog from '../components/AddRecipeDialog';
 import TagEditor from '../components/TagEditor';
+import GradeBadge from '../components/GradeBadge';
+import GradePicker from '../components/GradePicker';
 import Icon from '../components/Icon';
 
 
@@ -24,6 +26,8 @@ function FavouriteMeals() {
     // every tag, and the meal whose tags are being edited
     const [tags, setTags] = useState([]);
     const [editingMeal, setEditingMeal] = useState(null);
+    // the meal whose health grade is being changed
+    const [gradingMeal, setGradingMeal] = useState(null);
 
 
   const listOfSavedMeals = () => {
@@ -59,6 +63,11 @@ fetch("/api/recipes")
       const tagsSaved = (mealId, mealTags) => {
         setMealList((current) => current.map((meal) => (meal.id === mealId ? { ...meal, tags: mealTags } : meal)));
         setEditingMeal(null);
+      };
+
+      const gradeSaved = (mealId, grade) => {
+        setMealList((current) => current.map((meal) => (meal.id === mealId ? { ...meal, ...grade } : meal)));
+        setGradingMeal(null);
       };
 
       // tag chips under the title, ending with the button that opens the editor
@@ -187,8 +196,12 @@ fetch("/api/recipes")
               showSaveButton={false}
               renderActions={(meal) => <AddToWeekPicker meal={meal} />}
               renderMeta={renderTags}
+              renderBadge={(meal) => (
+                <GradeBadge grade={meal.grade} source={meal.grade_source} title={meal.title} onClick={() => setGradingMeal(meal)} />
+              )}
               selection={selecting ? { selectedIds, onToggle: toggleSelected } : undefined}
             />
+            <GradePicker meal={gradingMeal} onClose={() => setGradingMeal(null)} onSaved={gradeSaved} />
             <TagEditor
               meal={editingMeal}
               tags={tags}

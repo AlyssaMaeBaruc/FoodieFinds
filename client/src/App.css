@@ -2166,3 +2166,282 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* ---------- Health grades ---------- */
+
+.grade-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  /* white ring keeps the colour crisp on any background */
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(63, 38, 24, 0.25);
+}
+
+.grade-a { background: var(--grade-a); }
+.grade-b { background: var(--grade-b); }
+/* yellow is too light for white text */
+.grade-c { background: var(--grade-c); color: var(--brown); }
+.grade-d { background: var(--grade-d); }
+.grade-e { background: var(--grade-e); }
+
+.grade-badge.is-empty {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px dashed var(--brown-soft);
+  color: var(--brown);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+button.grade-badge:hover {
+  transform: scale(1.06);
+}
+
+.grade-badge.is-inline {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  border-width: 1.5px;
+  box-shadow: 0 1px 2px rgba(63, 38, 24, 0.2);
+  vertical-align: middle;
+}
+
+/* next to the title, on the card itself (not the photo) so the letter is always readable */
+/* the row takes over the title's job of stretching, so card buttons stay lined up */
+.card-title-row {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.recipe-card.is-compact .card-title-row {
+  flex: none;
+}
+
+.recipe-card .card-title-row > h4 {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-badge {
+  flex-shrink: 0;
+  margin-top: 12px;
+  margin-right: 6px;
+}
+
+.recipe-card.is-compact .card-badge {
+  margin-top: 8px;
+  margin-right: 0;
+}
+
+.recipe-card.is-compact .grade-badge {
+  min-width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+}
+
+.chooser-item .grade-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Health grade pop-up */
+.grade-picker {
+  width: min(400px, calc(100vw - 32px));
+  padding: 0;
+  color: var(--brown);
+  background: rgba(253, 248, 242, 0.94);
+  border-radius: var(--radius-lg);
+}
+
+.grade-picker[open] {
+  animation: chooser-in 0.25s var(--ease);
+}
+
+.grade-picker::backdrop {
+  background: rgba(63, 38, 24, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.grade-options {
+  display: flex;
+  gap: 10px;
+}
+
+.grade-option {
+  flex: 1;
+  height: 52px;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 800;
+  opacity: 0.55;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.grade-option:hover:not(:disabled),
+.grade-option.is-current {
+  opacity: 1;
+}
+
+.grade-option.is-current {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--brown);
+}
+
+.grade-note {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--brown-soft);
+}
+
+/* Week mix and weekly rules (This Week) */
+.week-health {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  max-width: 760px;
+  margin: 0 auto 18px;
+  padding: 14px 20px;
+  text-align: left;
+}
+
+.week-mix {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.goal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--brown-faint);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.goal-status.is-reached {
+  background: var(--grade-a);
+  color: #fff;
+}
+
+.mix-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mix-counts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mix-ungraded {
+  color: var(--brown-soft);
+}
+
+.rules-drawer {
+  flex-basis: 100%;
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.rules-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brown-soft);
+  list-style: none;
+}
+
+.rules-summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules-drawer[open] .drawer-chevron {
+  transform: rotate(90deg);
+}
+
+.rule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.rule-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.rule-switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--glass-strong);
+}
+
+.stepper-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brown);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.stepper-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.stepper-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.stepper-value {
+  min-width: 22px;
+  text-align: center;
+}
+
+.rule-hint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--brown-soft);
+}

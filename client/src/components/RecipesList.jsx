@@ -3,9 +3,9 @@ import RecipeCard from './RecipeCard';
 import Icon from './Icon';
 
 // renderActions(recipe) lets a page add its own buttons to each card.
-// renderMeta(recipe) adds a small line under the title (e.g. tags).
+// renderMeta(recipe) adds a small line under the title (e.g. tags); renderBadge(recipe) a badge on the photo.
 // selection = { selectedIds: Set, onToggle(id) } puts the cards in select mode.
-function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActions, renderMeta, selection }) {
+function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActions, renderMeta, renderBadge, selection }) {
   // titles saved during this visit, so the heart stays filled
   const [savedTitles, setSavedTitles] = useState([]);
 
@@ -31,6 +31,7 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActi
             spoonacularId={spoonacularId}
             link={link}
             meta={renderMeta?.(recipe)}
+            badge={renderBadge?.(recipe)}
             onSave={showSaveButton ? () => handleSave(recipe) : null}
             isSaved={savedTitles.includes(recipe.title)}
             onSelect={selection ? () => selection.onToggle(recipe.id) : undefined}

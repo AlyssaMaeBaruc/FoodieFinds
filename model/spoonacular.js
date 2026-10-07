@@ -12,8 +12,9 @@ class SpoonacularError extends Error {
   }
 }
 
-// path: "/recipes/extract"; query: URL params; form: x-www-form-urlencoded body (makes it a POST)
-async function spoonacular(path, { query = {}, form = null, timeoutMs = 20000 } = {}) {
+// path: "/recipes/extract"; query: URL params; form: x-www-form-urlencoded body, or json: JSON body
+// (either makes it a POST)
+async function spoonacular(path, { query = {}, form = null, json = null, timeoutMs = 20000 } = {}) {
   const apiKey = process.env.SPOONACULAR_API_KEY;
   if (!apiKey) throw new SpoonacularError(500, 'The server is missing SPOONACULAR_API_KEY in its .env file.');
 
@@ -21,9 +22,9 @@ async function spoonacular(path, { query = {}, form = null, timeoutMs = 20000 } 
   let response;
   try {
     response = await fetch(`${BASE_URL}${path}?${params}`, {
-      method: form ? 'POST' : 'GET',
-      headers: form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : undefined,
-      body: form ? new URLSearchParams(form) : undefined,
+      method: form || json ? 'POST' : 'GET',
+      headers: form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : json ? { 'Content-Type': 'application/json' } : undefined,
+      body: form ? new URLSearchParams(form) : json ? JSON.stringify(json) : undefined,
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {

@@ -2,6 +2,15 @@ var express = require('express');
 var router = express.Router();
 const db = require('../model/helper');
 const { suggestTagsForMeals, tagsByMeal } = require('../model/mealTags');
+const { fillMissingHealthScores } = require('../model/healthScores');
+const { GRADES, withGrade, HEALTH_COLUMNS, HEALTH_JOIN } = require('../model/healthGrade');
+
+// every saved meal with its health score (Spoonacular's, or estimated for custom recipes)
+const savedMealsWithScores = () => db(
+  `SELECT sm.id, sm.title, sm.image, sm.spoonacular_id, sm.source_url, sm.steps, sm.is_custom,
+          sm.tags_suggested, sm.health_checked, ${HEALTH_COLUMNS}
+   FROM saved_meals sm ${HEALTH_JOIN} ORDER BY sm.id;`
+);
 
 
 // /* GET users listing. */
@@ -36,7 +45,7 @@ console.error('Error on saving recipe', err);
 });
 
 
-// GET ALL THE FAVOURITED OR SAVED MEALS (each with its tags)
+// GET ALL THE FAVOURITED OR SAVED MEALS (each with its tags and health grade)
 
 router.get("/", async function(req, res, next) {
   let meals;
@@ -46,16 +55,51 @@ router.get("/", async function(req, res, next) {
     return res.status(500).send(err);
   }
 
-  // tags are extra: if they fail (e.g. migration 007 not run yet), still send the meals
+  // tags and grades are extra: if they fail (e.g. a migration not run yet, or the daily
+  // Spoonacular limit), still send the meals; the next visit tries again
+  let tags = new Map();
   try {
     // meals saved since the last visit get suggested tags once
     const untagged = meals.filter((meal) => !meal.tags_suggested);
     if (untagged.length > 0) await suggestTagsForMeals(untagged);
-    const tags = await tagsByMeal();
-    res.send(meals.map((meal) => ({ ...meal, tags: tags.get(meal.id) ?? [] })));
+    tags = await tagsByMeal();
   } catch (err) {
     console.error('Error loading meal tags', err);
-    res.send(meals.map((meal) => ({ ...meal, tags: [] })));
+  }
+  try {
+    await fillMissingHealthScores(meals);
+  } catch (err) {
+    console.error('Error getting health scores', err.message ?? err);
+  }
+  try {
+    meals = (await savedMealsWithScores()).data.map(withGrade);
+  } catch (err) {
+    console.error('Error loading health grades', err);
+  }
+  res.send(meals.map((meal) => ({ ...meal, tags: tags.get(meal.id) ?? [] })));
+});
+
+// SET OR CLEAR A MEAL'S GRADE: { grade: "A".."E" } or { grade: null } to use Spoonacular's again
+router.put("/:id/grade", async function(req, res) {
+  const id = Number(req.params.id);
+  const { grade } = req.body;
+  if (!Number.isInteger(id) || !(grade === null || GRADES.includes(grade))) {
+    return res.status(400).send({ message: 'grade must be A, B, C, D, E or null' });
+  }
+  try {
+    await db('UPDATE saved_meals SET grade_override = ? WHERE id = ?;', [grade, id]);
+    const result = await db(`SELECT sm.id, ${HEALTH_COLUMNS} FROM saved_meals sm ${HEALTH_JOIN} WHERE sm.id = ?;`, [id]);
+    res.send(withGrade(result.data[0]));
+  } catch (err) {
+    // the helper rejects when no row changed: the meal is gone, or the grade was already that
+    if (err === 'Action not complete') {
+      const found = await db('SELECT id FROM saved_meals WHERE id = ?;', [id]).catch(() => ({ data: [] }));
+      if (found.data.length === 0) return res.status(404).send({ message: 'That meal is no longer saved' });
+      const result = await db(`SELECT sm.id, ${HEALTH_COLUMNS} FROM saved_meals sm ${HEALTH_JOIN} WHERE sm.id = ?;`, [id]);
+      return res.send(withGrade(result.data[0]));
+    }
+    console.error('Error saving meal grade', err);
+    res.status(500).send({ message: "Couldn't save the grade. Please try again." });
   }
 });
 
