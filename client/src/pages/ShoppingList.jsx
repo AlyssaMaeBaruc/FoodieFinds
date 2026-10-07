@@ -47,6 +47,21 @@ function groupByAisle(items) {
     .sort((a, b) => a.aisle.localeCompare(b.aisle));
 }
 
+// plain text of what's still to buy, grouped by aisle, for WhatsApp or any app
+// (pantry basics are left out; they're things you probably already have)
+function buildShareText(title, items) {
+  const aisles = groupByAisle(items.filter((item) => !item.bought))
+    .map((group) => [group.aisle, ...group.items.map((item) => `• ${item.ingredient_name}`)].join("\n"));
+  return [`🛒 Shopping list – ${title}`, ...aisles].join("\n\n");
+}
+
+// phones get their own share menu; desktop (even browsers that can share, like Safari on Mac) opens WhatsApp
+const usePhoneShare = () =>
+  typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
+
+// how long the "Copied!" tick stays on the Copy button
+const COPIED_MS = 2000;
+
 // one checkbox row: ingredient name, and the planned meals that use it underneath
 function ShoppingItem({ item, onToggle, leaving = false }) {
   return (
@@ -72,6 +87,8 @@ function ShoppingList() {
   // items just ticked that are still shown in their aisle: id -> "shown" | "leaving"
   const [settling, setSettling] = useState({});
   const timers = useRef({});
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef(null);
 
   const clearSettling = (id) => {
     (timers.current[id] ?? []).forEach(clearTimeout);
@@ -89,7 +106,10 @@ function ShoppingList() {
   };
 
   // stop pending timers when leaving the page
-  useEffect(() => () => Object.values(timers.current).flat().forEach(clearTimeout), []);
+  useEffect(() => () => {
+    Object.values(timers.current).flat().forEach(clearTimeout);
+    clearTimeout(copiedTimer.current);
+  }, []);
 
   useEffect(() => {
     // ignore answers for a week the user has already clicked away from
@@ -163,6 +183,36 @@ function ShoppingList() {
 
   const toggleBought = (item, options) => setBought([item], !item.bought, options);
 
+  const shareText = () => buildShareText(`${weekTitle(offset, weekDays)} (${weekDays[0].label} – ${weekDays[6].label})`, items);
+
+  const share = async () => {
+    const text = shareText();
+    if (!usePhoneShare()) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+      return;
+    }
+    try {
+      await navigator.share({ text });
+    } catch (err) {
+      // closing the share menu without picking an app isn't an error
+      if (err.name === "AbortError") return;
+      setError("Couldn't open sharing. Try Copy instead.");
+      console.error(err);
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText());
+      setCopied(true);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), COPIED_MS);
+    } catch (err) {
+      setError("Couldn't copy the list. Your browser may have blocked it.");
+      console.error(err);
+    }
+  };
+
   const allItems = list?.items ?? [];
   // pantry basics go in their own collapsed section; progress counts the main list only
   const items = allItems.filter((item) => !item.is_pantry);
@@ -171,6 +221,7 @@ function ShoppingList() {
   const toBuy = items.filter((item) => !item.bought || settling[item.id]);
   const basket = byName(items.filter((item) => item.bought && !settling[item.id]));
   const boughtCount = items.filter((item) => item.bought).length;
+  const canShare = boughtCount < items.length;
   const pantryChecked = pantryItems.filter((item) => item.bought).length;
   const hasList = Boolean(list?.generated_at);
   const recipes = groupByRecipe(list?.meals ?? []);
@@ -213,10 +264,22 @@ function ShoppingList() {
               <Icon name="calendar" size={16} /> Plan meals
             </Link>
           ) : (
-            <button className="btn btn-accent" onClick={generate} disabled={generating}>
-              <Icon name="check" size={16} />
-              {generating ? "Making your list…" : hasList ? "Regenerate list" : "Generate list"}
-            </button>
+            <div className="list-actions">
+              {hasList && canShare && (
+                <>
+                  <button className="btn btn-ghost" onClick={share}>
+                    <Icon name="share" size={16} /> Share
+                  </button>
+                  <button className={`btn btn-ghost${copied ? " is-copied" : ""}`} onClick={copy} aria-live="polite">
+                    <Icon name={copied ? "check" : "copy"} size={16} /> {copied ? "Copied!" : "Copy"}
+                  </button>
+                </>
+              )}
+              <button className="btn btn-accent" onClick={generate} disabled={generating}>
+                <Icon name="check" size={16} />
+                {generating ? "Making your list…" : hasList ? "Regenerate list" : "Generate list"}
+              </button>
+            </div>
           )}
         </section>
       )}

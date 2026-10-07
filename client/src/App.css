@@ -1018,6 +1018,18 @@
   min-width: 220px;
 }
 
+/* Share, Copy and Generate sit together; they wrap under the progress on small screens */
+.list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-ghost.is-copied {
+  color: var(--accent-hover);
+  border-color: currentColor;
+}
+
 .list-progress-text {
   margin: 0 0 8px;
   font-weight: 600;
