@@ -56,6 +56,20 @@ function MyRecipe() {
             </div>
           </header>
 
+          {/* recipes from TikTok: the video itself, with TikTok's own player */}
+          {recipe.tiktok_video_id && (
+            <section className="recipe-video glass">
+              <h2 className="recipe-section-title">Video</h2>
+              <iframe
+                className="tiktok-player"
+                src={`https://www.tiktok.com/player/v1/${recipe.tiktok_video_id}?rel=0`}
+                title={`TikTok video: ${recipe.title}`}
+                allow="fullscreen; encrypted-media; picture-in-picture"
+                loading="lazy"
+              />
+            </section>
+          )}
+
           <div className="recipe-body">
             <section className="recipe-panel ingredients-panel glass">
               <h2 className="recipe-section-title">

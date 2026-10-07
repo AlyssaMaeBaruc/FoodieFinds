@@ -35,6 +35,8 @@ app.use('/api/meal-plan', mealPlanRouter);
 app.use('/api/shopping-list', shoppingListRouter);
 app.use('/api/custom-recipes', customRecipesRouter);
 app.use('/api/tags', tagsRouter);
+// photos the app keeps a copy of (TikTok thumbnails expire)
+app.use('/api/images', express.static(path.join(__dirname, 'uploads'), { maxAge: '30d' }));
 app.use('/api/weekly-rules', weeklyRulesRouter);
 
 // catch 404 and forward to error handler

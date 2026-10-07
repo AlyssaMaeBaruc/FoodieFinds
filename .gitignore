@@ -5,3 +5,6 @@
 /dist
 .env
 /client/node_modules
+
+# photos kept by the app (e.g. from TikTok)
+/uploads

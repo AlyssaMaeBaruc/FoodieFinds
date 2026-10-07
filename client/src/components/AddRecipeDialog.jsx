@@ -75,6 +75,22 @@ function AddRecipeDialog({ open, onClose, onSaved }) {
         setStep("form");
         return;
       }
+      // TikTok caption without an ingredient list: the manual form, with what we found filled in
+      if (data.from_tiktok && data.ingredients.length === 0) {
+        setManual({
+          title: data.title || "",
+          image: data.image || "",
+          source: data.source_url || "",
+          ingredients: (data.ingredient_lines ?? []).join("\n"),
+          steps: (data.steps ?? []).join("\n"),
+        });
+        setNotice(data.ingredient_lines
+          ? "Found ingredients in the caption but couldn't check them right now. Look them over below, then continue."
+          : "No ingredients in the caption, add them below.");
+        setTab("manual");
+        setStep("form");
+        return;
+      }
       setDraft(data);
       setStep("review");
     } catch (err) {
@@ -260,7 +276,7 @@ function AddRecipeDialog({ open, onClose, onSaved }) {
                   autoFocus
                 />
               </label>
-              <p className="field-hint">We'll fill in the name, photo, ingredients and steps for you to review before saving.</p>
+              <p className="field-hint">Works with recipe websites and TikTok videos. We'll fill in the name, photo, ingredients and steps for you to review before saving.</p>
               <button type="submit" className="btn btn-accent" disabled={busy === "import"}>
                 {busy === "import" ? "Reading the recipe…" : <><Icon name="arrowRight" size={16} /> Import</>}
               </button>
@@ -271,10 +287,14 @@ function AddRecipeDialog({ open, onClose, onSaved }) {
           {step === "form" && tab === "manual" && (
             <form className="add-form" onSubmit={checkIngredients}>
               {notice && <p className="notice-inline"><Icon name="alert" size={16} /> {notice}</p>}
-              <label className="field">
-                <span className="field-label">Name</span>
-                <input className="field-input" value={manual.title} onChange={(e) => setManual({ ...manual, title: e.target.value })} required />
-              </label>
+              <div className={manual.image ? "review-head" : undefined}>
+                {/* photo found for you (e.g. from TikTok) */}
+                {manual.image && <RecipeImage src={manual.image} className="review-image" />}
+                <label className={`field${manual.image ? " review-title" : ""}`}>
+                  <span className="field-label">Name</span>
+                  <input className="field-input" value={manual.title} onChange={(e) => setManual({ ...manual, title: e.target.value })} required />
+                </label>
+              </div>
               <div className="field-row">
                 <label className="field">
                   <span className="field-label">Image link <em>optional</em></span>

@@ -4,12 +4,16 @@ const db = require('../model/helper');
 const { spoonacular, SpoonacularError } = require('../model/spoonacular');
 const { translateLine, buildDictionary } = require('../model/translateIngredient');
 const builtInDictionary = require('../model/spanishDictionary');
+const { isTikTokUrl, isTikTokImage, videoIdFrom, fetchTikTok, keepImageCopy, TikTokError, UPLOADS_URL } = require('../model/tiktok');
+const { readCaption } = require('../model/tiktokCaption');
 
 // a link counts as failed when the page title looks like an error page
 const ERROR_TITLE = /\b(error|404|403|not found|page not found|access denied|forbidden|no encontrad[ao]|no existe|se ha producido un error|just a moment|captcha)\b/i;
 
 const MAX_LINES = 80;
 const isHttpUrl = (text) => /^https?:\/\/\S+$/i.test(text || '');
+// a photo we keep a copy of (e.g. from TikTok), served by this app
+const isOwnImage = (text) => new RegExp(`^${UPLOADS_URL}/[\\w.-]+$`).test(text || '');
 
 // a message the app can show, plus a status code
 class InputError extends Error {
@@ -85,12 +89,46 @@ function extractSteps(recipe) {
     .filter(Boolean);
 }
 
+// TikTok link -> a draft from the video's caption (via TikTok's oEmbed, free).
+// No ingredients in the caption: still sends title, photo and source, with an empty list.
+async function extractTikTok(url, res) {
+  let video;
+  try {
+    video = await fetchTikTok(url);
+  } catch (err) {
+    const message = err instanceof TikTokError ? err.message : "Couldn't read that TikTok link.";
+    return res.status(422).send({ failed: true, message });
+  }
+
+  const caption = readCaption(video.caption);
+  const draft = {
+    title: caption.title || (video.author ? `TikTok recipe by ${video.author}` : 'TikTok recipe'),
+    image: video.thumbnail,
+    source_url: video.sourceUrl,
+    steps: caption.steps,
+    ingredients: [],
+    from_tiktok: true,
+  };
+  if (caption.ingredients.length === 0) return res.send(draft);
+
+  try {
+    // the same reading as hand-typed recipes, Spanish dictionary included (one Spoonacular call)
+    const dictionary = await loadDictionary();
+    draft.ingredients = await parseLines(caption.ingredients.slice(0, MAX_LINES), dictionary);
+    res.send(draft);
+  } catch (err) {
+    // couldn't read the lines: send them as typed text so they can be checked by hand
+    res.send({ ...draft, ingredient_lines: caption.ingredients.slice(0, MAX_LINES) });
+  }
+}
+
 // IMPORT A RECIPE FROM A LINK -> a draft to review (nothing is saved yet)
 router.post('/extract', async function (req, res) {
   const url = (req.body.url || '').trim();
   if (!isHttpUrl(url) || url.length > 1000) {
     return res.status(400).send({ failed: true, message: 'Please paste a full link starting with http:// or https://' });
   }
+  if (isTikTokUrl(url)) return extractTikTok(url, res);
 
   let recipe;
   try {
@@ -160,14 +198,14 @@ router.post('/parse', async function (req, res) {
 router.post('/', async function (req, res) {
   try {
     const title = String(req.body.title || '').trim();
-    const image = String(req.body.image || '').trim() || null;
+    let image = String(req.body.image || '').trim() || null;
     const sourceUrl = String(req.body.source_url || '').trim() || null;
     const steps = (Array.isArray(req.body.steps) ? req.body.steps : []).map((s) => String(s).trim()).filter(Boolean);
     const ingredients = Array.isArray(req.body.ingredients) ? req.body.ingredients : [];
     const learned = Array.isArray(req.body.learned) ? req.body.learned : [];
 
     if (!title || title.length > 255) throw new InputError(400, 'Give the recipe a name (up to 255 characters).');
-    if (image && (!isHttpUrl(image) || image.length > 500)) throw new InputError(400, 'The image must be a link starting with http:// or https://');
+    if (image && !isOwnImage(image) && (!isHttpUrl(image) || image.length > 500)) throw new InputError(400, 'The image must be a link starting with http:// or https://');
     if (sourceUrl && (!isHttpUrl(sourceUrl) || sourceUrl.length > 1000)) throw new InputError(400, 'The source must be a link starting with http:// or https://');
     if (steps.length > 60 || steps.some((s) => s.length > 2000)) throw new InputError(400, 'Too many or too long steps.');
     if (ingredients.length === 0 || ingredients.length > MAX_LINES) throw new InputError(400, `Add between 1 and ${MAX_LINES} ingredients.`);
@@ -179,6 +217,14 @@ router.post('/', async function (req, res) {
       const ingredientId = Number.isInteger(i.ingredient_id) && i.ingredient_id > 0 ? i.ingredient_id : null;
       return [position, original, name, ingredientId, i.aisle ? String(i.aisle).slice(0, 100) : null, i.image ? String(i.image).slice(0, 255) : null];
     });
+    // TikTok photo links expire after a few days: keep our own copy (or save without a photo)
+    if (image && isTikTokImage(image)) {
+      image = await keepImageCopy(image).catch((err) => {
+        console.error('Error keeping the TikTok photo', err.message);
+        return null;
+      });
+    }
+
     const pairs = learned
       .map((p) => [String(p.spanish || '').trim().toLowerCase().slice(0, 255), String(p.english || '').trim().toLowerCase().slice(0, 255)])
       .filter(([spanish, english]) => spanish && english && spanish !== english);
@@ -223,6 +269,8 @@ router.get('/:id', async function (req, res) {
       ...recipe,
       steps: typeof recipe.steps === 'string' ? JSON.parse(recipe.steps) : recipe.steps || [],
       ingredients: ingredients.data,
+      // recipes from TikTok show the video on their page
+      tiktok_video_id: isTikTokUrl(recipe.source_url) ? videoIdFrom(recipe.source_url) : null,
     });
   } catch (err) {
     sendError(res, err, 'loading the recipe');
