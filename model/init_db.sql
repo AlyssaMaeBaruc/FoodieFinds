@@ -3,6 +3,8 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists ingredient_translations;
+DROP TABLE if exists custom_ingredients;
 DROP TABLE if exists shopping_list;
 DROP TABLE if exists shopping_list_week;
 DROP TABLE if exists meal_plan;
@@ -16,8 +18,11 @@ SET foreign_key_checks = 1;
 CREATE TABLE saved_meals (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) not null,
-    image VARCHAR(255) not null,
+    image VARCHAR(500) NULL,
     spoonacular_id INT NULL,
+    source_url VARCHAR(1000) NULL,
+    steps JSON NULL,
+    is_custom BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT uq_saved_meals_spoonacular_id UNIQUE (spoonacular_id)
     );
 
@@ -49,4 +54,25 @@ CREATE TABLE shopping_list_week (
     week_start DATE PRIMARY KEY,
     generated_at DATETIME NOT NULL,
     meals JSON NOT NULL
+    );
+
+-- parsed ingredients of custom recipes (added from a link or by hand)
+CREATE TABLE custom_ingredients (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    saved_meal_id INT NOT NULL,
+    position INT NOT NULL,
+    original VARCHAR(500) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    ingredient_id INT NULL,
+    aisle VARCHAR(100) NULL,
+    image VARCHAR(255) NULL,
+    CONSTRAINT fk_custom_ingredients_saved_meal
+        FOREIGN KEY (saved_meal_id) REFERENCES saved_meals(id) ON DELETE CASCADE
+    );
+
+-- Spanish -> English ingredient words taught in the review step
+CREATE TABLE ingredient_translations (
+    spanish VARCHAR(255) PRIMARY KEY,
+    english VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

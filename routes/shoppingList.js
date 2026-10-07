@@ -1,11 +1,9 @@
-require('dotenv').config();
 var express = require('express');
 var router = express.Router();
 const db = require('../model/helper');
 const { parseDate, weekRange } = require('../model/dates');
 const { buildShoppingList } = require('../model/shoppingList');
-
-const SPOONACULAR_BASE_URL = 'https://api.spoonacular.com';
+const { spoonacular, SpoonacularError } = require('../model/spoonacular');
 
 // errors with a status code and a message that is safe to show in the app
 class ListError extends Error {
@@ -19,7 +17,7 @@ class ListError extends Error {
 async function plannedMeals(start, end) {
   const result = await db(
     `SELECT mp.id AS plan_id, DATE_FORMAT(mp.plan_date, '%Y-%m-%d') AS plan_date, mp.slot, mp.servings,
-            mp.saved_meal_id, sm.title, sm.image, sm.spoonacular_id
+            mp.saved_meal_id, sm.title, sm.image, sm.spoonacular_id, sm.is_custom
      FROM meal_plan mp
      JOIN saved_meals sm ON sm.id = mp.saved_meal_id
      WHERE mp.plan_date BETWEEN ? AND ?
@@ -44,17 +42,38 @@ const parseJson = (value, fallback) => {
 // line can combine several Spoonacular ids ("kosher salt" and "sea salt" -> "Salt")
 const itemKey = (item) => item.ingredient_name.toLowerCase();
 
-// all recipes in ONE Spoonacular call to save quota
-async function fetchRecipes(ids) {
-  const apiKey = process.env.SPOONACULAR_API_KEY;
-  if (!apiKey) throw new ListError(500, 'The server is missing SPOONACULAR_API_KEY in its .env file.');
+// which recipe a planned meal uses: a Spoonacular recipe, or one of your custom recipes
+const recipeKey = (meal) => (meal.spoonacular_id ? `s:${meal.spoonacular_id}` : `c:${meal.saved_meal_id}`);
 
-  const url = `${SPOONACULAR_BASE_URL}/recipes/informationBulk?ids=${ids.join(',')}&includeNutrition=false&apiKey=${apiKey}`;
-  const response = await fetch(url);
-  if (response.status === 402) throw new ListError(503, 'Daily recipe limit reached. Please try again tomorrow.');
-  if (!response.ok) throw new ListError(502, "Couldn't reach the recipe service. Please try again later.");
-  const recipes = await response.json();
-  return new Map(recipes.map((recipe) => [recipe.id, recipe]));
+// all Spoonacular recipes in ONE call to save quota
+async function fetchRecipes(ids) {
+  try {
+    const recipes = await spoonacular('/recipes/informationBulk', { query: { ids: ids.join(','), includeNutrition: false } });
+    return recipes.map((recipe) => [`s:${recipe.id}`, recipe]);
+  } catch (err) {
+    if (err instanceof SpoonacularError) throw new ListError(err.status, err.message);
+    throw err;
+  }
+}
+
+// custom recipes' ingredients come from our own table, shaped like Spoonacular's
+async function loadCustomRecipes(savedMealIds) {
+  const rows = await db(
+    'SELECT saved_meal_id, name, ingredient_id, aisle, image FROM custom_ingredients WHERE saved_meal_id IN (?) ORDER BY saved_meal_id, position;',
+    [savedMealIds]
+  );
+  const recipes = new Map(savedMealIds.map((id) => [`c:${id}`, { extendedIngredients: [] }]));
+  for (const row of rows.data) {
+    recipes.get(`c:${row.saved_meal_id}`).extendedIngredients.push({
+      id: row.ingredient_id,
+      name: row.name,
+      nameClean: row.name,
+      originalName: row.name,
+      aisle: row.aisle,
+      image: row.image,
+    });
+  }
+  return [...recipes.entries()].filter(([, recipe]) => recipe.extendedIngredients.length > 0);
 }
 
 // the saved list for a week, plus the meals it was made from
@@ -118,15 +137,19 @@ router.post('/generate', async function (req, res) {
     const meals = await plannedMeals(start, end);
     if (meals.length === 0) throw new ListError(400, 'No meals are planned for this week yet.');
 
-    const withRecipe = meals.filter((meal) => meal.spoonacular_id);
-    const ids = [...new Set(withRecipe.map((meal) => meal.spoonacular_id))];
-    const recipes = ids.length > 0 ? await fetchRecipes(ids) : new Map();
-    const items = buildShoppingList(withRecipe, recipes);
+    const keyed = meals.map((meal) => ({ ...meal, recipe_key: recipeKey(meal) }));
+    const spoonacularIds = [...new Set(meals.filter((m) => m.spoonacular_id).map((m) => m.spoonacular_id))];
+    const customIds = [...new Set(meals.filter((m) => !m.spoonacular_id && m.is_custom).map((m) => m.saved_meal_id))];
+    const recipes = new Map([
+      ...(spoonacularIds.length > 0 ? await fetchRecipes(spoonacularIds) : []),
+      ...(customIds.length > 0 ? await loadCustomRecipes(customIds) : []),
+    ]);
+    const items = buildShoppingList(keyed, recipes);
 
     // remember which meals were used, and flag any that couldn't be included
     const mealsUsed = meals.map((meal) => ({
       ...meal,
-      skipped: !meal.spoonacular_id || !recipes.has(meal.spoonacular_id),
+      skipped: !recipes.has(recipeKey(meal)),
     }));
 
     // keep items ticked as bought if they are still on the new list

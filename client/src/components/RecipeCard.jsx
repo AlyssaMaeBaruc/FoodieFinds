@@ -1,22 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './Icon';
+import RecipeImage from './RecipeImage';
 
 // photo card used by search results, saved meals and the weekly plan.
 // `meta` is a small line under the title (e.g. portions); `children` are the buttons below it;
 // `mediaAction` is an extra round button on the photo (e.g. delete).
-function RecipeCard({ title, image, spoonacularId, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, children }) {
-  const recipeLink = spoonacularId ? `/recipe/${spoonacularId}` : null;
+// `link` overrides where the card goes (custom recipes open /my-recipe/:id).
+function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, children }) {
+  const recipeLink = link ?? (spoonacularId ? `/recipe/${spoonacularId}` : null);
 
   return (
     <Tag className={`recipe-card glass${compact ? " is-compact" : ""}`}>
       <div className="card-media">
         {recipeLink ? (
           <Link to={recipeLink} aria-label={`View recipe for ${title}`}>
-            <img src={image} alt={title} />
+            <RecipeImage src={image} alt={title} />
           </Link>
         ) : (
-          <img src={image} alt={title} />
+          <RecipeImage src={image} alt={title} />
         )}
         {/* adding a favourite button for every meal that appears  */}
         {onSave && (

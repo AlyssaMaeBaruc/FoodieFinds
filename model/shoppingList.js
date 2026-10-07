@@ -92,14 +92,15 @@ function shoppingNames(ingredient) {
 // "feta" -> "Feta"
 const capitalize = (name) => name.charAt(0).toUpperCase() + name.slice(1);
 
-// plannedMeals: [{ spoonacular_id, title }] in plan order
-// recipesById: Map of spoonacular id -> recipe from /recipes/informationBulk
+// plannedMeals: [{ recipe_key, title }] in plan order
+// recipesById: Map of recipe_key -> recipe with extendedIngredients
+//   (Spoonacular recipes from /recipes/informationBulk, or custom recipes built from our own table)
 // returns [{ ingredient_id, ingredient_name, aisle, used_in: [meal titles] }]
 function buildShoppingList(plannedMeals, recipesById) {
   const lines = new Map();
 
   for (const meal of plannedMeals) {
-    const recipe = recipesById.get(meal.spoonacular_id);
+    const recipe = recipesById.get(meal.recipe_key);
     if (!recipe) continue;
 
     for (const ingredient of recipe.extendedIngredients ?? []) {

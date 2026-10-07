@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Icon from "../components/Icon";
+import RecipeImage from "../components/RecipeImage";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
 import { parseDateText, weekTitle } from "../week";
 import { isPantryBasic } from "../pantryBasics";
@@ -240,7 +241,7 @@ function ShoppingList() {
           <ul className="recipe-rows">
             {recipes.map((recipe) => (
               <li key={recipe.saved_meal_id ?? recipe.title} className={`recipe-row glass${recipe.skipped ? " is-skipped" : ""}`}>
-                <img src={recipe.image} alt="" />
+                <RecipeImage src={recipe.image} />
                 <span className="recipe-row-text">
                   <span className="recipe-row-title">{recipe.title}</span>
                   <span className="recipe-row-meta">

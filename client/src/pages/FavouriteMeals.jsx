@@ -3,11 +3,15 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import RecipesList from '../components/RecipesList'; 
 import AddToWeekPicker from '../components/AddToWeekPicker';
+import AddRecipeDialog from '../components/AddRecipeDialog';
+import Icon from '../components/Icon';
 
 
 function FavouriteMeals() {
 
     const [mealList, setMealList] = useState([]);
+    // "Add recipe" pop-up
+    const [adding, setAdding] = useState(false);
 
 
   const listOfSavedMeals = () => {
@@ -53,8 +57,11 @@ fetch("/api/recipes")
           <p className="eyebrow">Your collection</p>
           <h1 className="hero-title">My <span>saved meals</span></h1>
           <p className="hero-text">Here, you'll find all your favourite dishes waiting for you. Happy Cooking! 😊</p>
+          <button className="btn btn-accent hero-action" onClick={() => setAdding(true)}>
+            <Icon name="plus" size={16} /> Add recipe
+          </button>
         </section>
-        {mealList.length === 0 && <p className="empty-state">No saved meals yet. Tap the heart on any recipe to keep it here.</p>}
+        {mealList.length === 0 && <p className="empty-state">No saved meals yet. Tap the heart on any recipe, or add your own with Add recipe.</p>}
         {/* i transferred all of this to the components recipeslist as im using the same logic */}
           {/* <div >
             {mealList.map((meal, index) => (
@@ -71,6 +78,11 @@ fetch("/api/recipes")
               showSaveButton={false}
               deleteMeal={deleteSavedMeal}
               renderActions={(meal) => <AddToWeekPicker meal={meal} />}
+            />
+            <AddRecipeDialog
+              open={adding}
+              onClose={() => setAdding(false)}
+              onSaved={() => { setAdding(false); listOfSavedMeals(); }}
             />
         </main>
       );

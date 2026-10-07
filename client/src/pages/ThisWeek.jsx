@@ -148,6 +148,7 @@ function ThisWeek() {
                       title={meal.title}
                       image={meal.image}
                       spoonacularId={meal.spoonacular_id}
+                      link={meal.spoonacular_id ? undefined : `/my-recipe/${meal.saved_meal_id}`}
                       meta={<><Icon name="utensils" size={14} /> {meal.servings} {meal.servings === 1 ? "portion" : "portions"}</>}
                     >
                       <button className="btn btn-ghost btn-sm" onClick={() => removeMeal(meal.id)}><Icon name="x" size={14} /> Remove</button>

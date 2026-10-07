@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './Icon';
+import RecipeImage from './RecipeImage';
 
 // pop-up listing saved meals, used to fill an empty slot on the This Week page.
 // target = { label: "Tue 6 Oct", slot: "lunch" } while open, null when closed
@@ -67,7 +68,7 @@ function MealChooser({ target, savedMeals, loading, busy, error, onPick, onClose
             {shown.map((meal) => (
               <li key={meal.id}>
                 <button className="chooser-item" disabled={busy} onClick={() => onPick(meal)}>
-                  <img src={meal.image} alt="" />
+                  <RecipeImage src={meal.image} />
                   <span>{meal.title}</span>
                 </button>
               </li>

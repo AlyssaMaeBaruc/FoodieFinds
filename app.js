@@ -9,6 +9,7 @@ const cors = require('cors');  // add at the top
 var recipesRouter = require('./routes/recipes');
 var mealPlanRouter = require('./routes/mealPlan');
 var shoppingListRouter = require('./routes/shoppingList');
+var customRecipesRouter = require('./routes/customRecipes');
 
 // var indexRouter = require('./routes/index');
 // var usersRouter = require('./routes/users');
@@ -30,6 +31,7 @@ app.use(cookieParser());
 app.use('/api/recipes', recipesRouter);
 app.use('/api/meal-plan', mealPlanRouter);
 app.use('/api/shopping-list', shoppingListRouter);
+app.use('/api/custom-recipes', customRecipesRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

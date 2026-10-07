@@ -18,6 +18,8 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActi
       {recipes.map((recipe, index) => {
         // saved meals carry spoonacular_id (their own id is the database row); search results use id
         const spoonacularId = "spoonacular_id" in recipe ? recipe.spoonacular_id : recipe.id;
+        // custom recipes (added from a link or by hand) have their own page
+        const link = recipe.is_custom ? `/my-recipe/${recipe.id}` : undefined;
         const actions = renderActions?.(recipe);
         return (
           <RecipeCard
@@ -25,6 +27,7 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActi
             title={recipe.title}
             image={recipe.image}
             spoonacularId={spoonacularId}
+            link={link}
             onSave={showSaveButton ? () => handleSave(recipe) : null}
             isSaved={savedTitles.includes(recipe.title)}
             mediaAction={deleteMeal && (
