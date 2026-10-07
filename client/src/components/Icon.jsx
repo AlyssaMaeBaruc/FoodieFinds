@@ -21,6 +21,10 @@ const PATHS = {
   share: <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4" /><path d="m15.4 6.5-6.8 4" /></>,
   copy: <><rect x="8.5" y="8.5" width="13" height="13" rx="2.5" /><path d="M5 15.5h-.5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2V5" /></>,
   tag: <><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4Z" /><circle cx="7.5" cy="7.5" r="1.2" /></>,
+  fridge: <><rect x="5" y="2" width="14" height="20" rx="2.5" /><path d="M5 10h14" /><path d="M8.5 5.5v2" /><path d="M8.5 13v3" /></>,
+  snowflake: <><path d="M12 2v20" /><path d="M2 12h20" /><path d="m16 4-4 4-4-4" /><path d="m8 20 4-4 4 4" /><path d="m20 16-4-4 4-4" /><path d="m4 8 4 4-4 4" /></>,
+  cupboard: <><rect x="3" y="3" width="18" height="18" rx="2.5" /><path d="M12 3v18" /><path d="M9.5 10.5v3" /><path d="M14.5 10.5v3" /></>,
+  move: <><path d="M5 9 2 12l3 3" /><path d="M19 9l3 3-3 3" /><path d="M2 12h20" /></>,
   chefHat: <><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.46.32-.84.73-1.04a4 4 0 0 0-2.14-7.59 5 5 0 0 0-9.18 0 4 4 0 0 0-2.14 7.59c.41.2.73.58.73 1.04V20a1 1 0 0 0 1 1Z" /><path d="M6 17h12" /></>,
 };
 

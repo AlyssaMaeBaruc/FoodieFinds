@@ -12,6 +12,7 @@ var shoppingListRouter = require('./routes/shoppingList');
 var customRecipesRouter = require('./routes/customRecipes');
 var tagsRouter = require('./routes/tags');
 var weeklyRulesRouter = require('./routes/weeklyRules');
+var pantryRouter = require('./routes/pantry');
 
 // var indexRouter = require('./routes/index');
 // var usersRouter = require('./routes/users');
@@ -38,6 +39,7 @@ app.use('/api/tags', tagsRouter);
 // photos the app keeps a copy of (TikTok thumbnails expire)
 app.use('/api/images', express.static(path.join(__dirname, 'uploads'), { maxAge: '30d' }));
 app.use('/api/weekly-rules', weeklyRulesRouter);
+app.use('/api/pantry', pantryRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -98,3 +98,14 @@
     font-size: 0.85rem;
   }
 }
+
+/* five links on small phones: a little tighter so they all fit */
+@media (max-width: 420px) {
+  .navbar-list {
+    gap: 0;
+  }
+  .navbar-link {
+    padding: 7px 9px;
+    font-size: 0.8rem;
+  }
+}

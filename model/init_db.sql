@@ -3,6 +3,8 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists pantry_items;
+DROP TABLE if exists ingredient_search_cache;
 DROP TABLE if exists weekly_rules;
 DROP TABLE if exists meal_tags;
 DROP TABLE if exists tags;
@@ -55,6 +57,7 @@ CREATE TABLE shopping_list (
     ingredient_name VARCHAR(255) NOT NULL,
     aisle VARCHAR(100) NOT NULL DEFAULT 'Other',
     bought BOOLEAN NOT NULL DEFAULT FALSE,
+    buy_anyway BOOLEAN NOT NULL DEFAULT FALSE,
     used_in JSON NULL,
     INDEX idx_shopping_list_week (week_start)
     );
@@ -134,3 +137,24 @@ CREATE TABLE weekly_rules (
     );
 
 INSERT INTO weekly_rules (type, value, enabled) VALUES ('min_good_grades', 4, FALSE);
+
+-- ingredients you have at home (no quantities); match_name is the shopping-list name
+CREATE TABLE pantry_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    match_name VARCHAR(255) NOT NULL,
+    ingredient_id INT NULL,
+    aisle VARCHAR(100) NULL,
+    location ENUM('fridge', 'freezer', 'cupboard') NOT NULL DEFAULT 'cupboard',
+    use_soon BOOLEAN NOT NULL DEFAULT FALSE,
+    from_list_item_id INT NULL,
+    added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_pantry_match_name UNIQUE (match_name)
+    );
+
+-- Spoonacular ingredient searches, so the same search never costs twice
+CREATE TABLE ingredient_search_cache (
+    query VARCHAR(100) PRIMARY KEY,
+    results JSON NOT NULL,
+    searched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );

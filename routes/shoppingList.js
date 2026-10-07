@@ -6,6 +6,8 @@ const { buildShoppingList } = require('../model/shoppingList');
 const { spoonacular, SpoonacularError } = require('../model/spoonacular');
 const { cacheRecipes } = require('../model/recipeIngredients');
 const { isPantryBasic } = require('../model/pantryBasics');
+const { loadPantry, addBoughtItems, removeAddedByListItems } = require('../model/pantry');
+const { findInPantry } = require('../model/pantryMatch');
 
 // errors with a status code and a message that is safe to show in the app
 class ListError extends Error {
@@ -80,17 +82,29 @@ async function loadCustomRecipes(savedMealIds) {
   return [...recipes.entries()].filter(([, recipe]) => recipe.extendedIngredients.length > 0);
 }
 
+// the pantry, or an empty one if it can't be read (e.g. migration 009 not run yet)
+const pantryOrEmpty = () => loadPantry().catch((err) => {
+  console.error('Error loading the pantry', err.code ?? err);
+  return [];
+});
+
 // the saved list for a week, plus the meals it was made from
 async function loadList(start, end) {
-  const [items, week, currentMeals] = await Promise.all([
+  const [items, week, currentMeals, pantry] = await Promise.all([
     db(
-      `SELECT id, ingredient_id, ingredient_name, aisle, bought, used_in
+      `SELECT id, ingredient_id, ingredient_name, aisle, bought, buy_anyway, used_in
        FROM shopping_list WHERE week_start = ?
        ORDER BY aisle, ingredient_name;`,
       [start]
-    ),
+    ).catch(() => db(
+      // before migration 009 there is no buy_anyway column
+      `SELECT id, ingredient_id, ingredient_name, aisle, bought, FALSE AS buy_anyway, used_in
+       FROM shopping_list WHERE week_start = ? ORDER BY aisle, ingredient_name;`,
+      [start]
+    )),
     db('SELECT generated_at, meals FROM shopping_list_week WHERE week_start = ?;', [start]),
     plannedMeals(start, end),
+    pantryOrEmpty(),
   ]);
 
   const info = week.data[0];
@@ -103,13 +117,20 @@ async function loadList(start, end) {
     meals,
     planned_meal_count: currentMeals.length,
     plan_changed: Boolean(info) && planSignature(meals) !== planSignature(currentMeals),
-    items: items.data.map((item) => ({
-      ...item,
-      bought: Boolean(item.bought),
-      used_in: parseJson(item.used_in, []),
-      // pantry basics (model/pantryBasics.js) go in the "Check your pantry" section
-      is_pantry: isPantryBasic(item.ingredient_name),
-    })),
+    items: items.data.map((item) => {
+      const inPantry = findInPantry(item, pantry);
+      return {
+        ...item,
+        bought: Boolean(item.bought),
+        buy_anyway: Boolean(item.buy_anyway),
+        used_in: parseJson(item.used_in, []),
+        // pantry basics (model/pantryBasics.js) go in the "Check your pantry" section
+        is_pantry: isPantryBasic(item.ingredient_name),
+        // in your Pantry: goes in "Already have" (unless bought here, or "buy anyway")
+        pantry_name: inPantry ? inPantry.name : null,
+        already_have: Boolean(inPantry) && !item.bought && !item.buy_anyway,
+      };
+    }),
   };
 }
 
@@ -158,9 +179,10 @@ router.post('/generate', async function (req, res) {
       skipped: !recipes.has(recipeKey(meal)),
     }));
 
-    // keep items ticked as bought if they are still on the new list
-    const previous = await db('SELECT ingredient_id, ingredient_name FROM shopping_list WHERE week_start = ? AND bought = TRUE;', [start]);
-    const boughtKeys = new Set(previous.data.map(itemKey));
+    // keep items ticked as bought (or marked "buy anyway") if they are still on the new list
+    const previous = await db('SELECT ingredient_id, ingredient_name, bought, buy_anyway FROM shopping_list WHERE week_start = ?;', [start]);
+    const boughtKeys = new Set(previous.data.filter((item) => item.bought).map(itemKey));
+    const buyAnywayKeys = new Set(previous.data.filter((item) => item.buy_anyway).map(itemKey));
 
     // replace the old list in one transaction; if anything fails, the connection closes
     // before COMMIT and MySQL rolls the whole thing back
@@ -168,10 +190,10 @@ router.post('/generate', async function (req, res) {
     const params = [start];
     if (items.length > 0) {
       statements.push(
-        `INSERT INTO shopping_list (week_start, ingredient_id, ingredient_name, aisle, bought, used_in) VALUES ${items.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')};`
+        `INSERT INTO shopping_list (week_start, ingredient_id, ingredient_name, aisle, bought, buy_anyway, used_in) VALUES ${items.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ')};`
       );
       for (const item of items) {
-        params.push(start, item.ingredient_id, item.ingredient_name, item.aisle, boughtKeys.has(itemKey(item)), JSON.stringify(item.used_in));
+        params.push(start, item.ingredient_id, item.ingredient_name, item.aisle, boughtKeys.has(itemKey(item)), buyAnywayKeys.has(itemKey(item)), JSON.stringify(item.used_in));
       }
     }
     statements.push(
@@ -188,6 +210,37 @@ router.post('/generate', async function (req, res) {
   }
 });
 
+// ticked: into the pantry (if not there yet); unticked: out again if that tick put it there.
+// Never fails the tick itself: returns how many were added to the pantry
+async function syncPantry(ids, bought) {
+  try {
+    if (!bought) {
+      await removeAddedByListItems(ids);
+      return 0;
+    }
+    const items = await db('SELECT id, ingredient_id, ingredient_name, aisle FROM shopping_list WHERE id IN (?);', [ids]);
+    return await addBoughtItems(items.data);
+  } catch (err) {
+    console.error('Error updating the pantry', err.code ?? err);
+    return 0;
+  }
+}
+
+// "BUY ANYWAY": an item you have, back onto the buy list (or back to "Already have")
+// { ids: [1, 2], buy_anyway: true }
+router.patch('/items/buy-anyway', async function (req, res) {
+  const { ids, buy_anyway: buyAnyway } = req.body;
+  if (typeof buyAnyway !== 'boolean' || !Array.isArray(ids) || ids.length === 0 || ids.length > 500 || !ids.every(Number.isInteger)) {
+    return res.status(400).send({ message: 'ids must be a list of item ids, and buy_anyway true or false' });
+  }
+  try {
+    await db('UPDATE shopping_list SET buy_anyway = ? WHERE id IN (?); SELECT 1;', [buyAnyway, ids]);
+    res.send({ ids, buy_anyway: buyAnyway });
+  } catch (err) {
+    sendError(res, err, 'updating the items');
+  }
+});
+
 // TICK OR UNTICK SEVERAL ITEMS AT ONCE: { ids: [1, 2, 3], bought: true }
 router.patch('/items', async function (req, res) {
   const { ids, bought } = req.body;
@@ -198,12 +251,12 @@ router.patch('/items', async function (req, res) {
     return res.status(400).send({ message: 'ids must be a list of item ids' });
   }
   try {
-    // mysql2 expands the array into IN (1, 2, 3)
-    await db('UPDATE shopping_list SET bought = ? WHERE id IN (?);', [bought, ids]);
-    res.send({ ids, bought });
+    // mysql2 expands the array into IN (1, 2, 3); SELECT 1 keeps the helper happy when
+    // every item already had this value
+    await db('UPDATE shopping_list SET bought = ? WHERE id IN (?); SELECT 1;', [bought, ids]);
+    const pantryAdded = await syncPantry(ids, bought);
+    res.send({ ids, bought, pantry_added: pantryAdded });
   } catch (err) {
-    // the helper rejects when no row changed, e.g. every item already had this value
-    if (err === 'Action not complete') return res.send({ ids, bought });
     sendError(res, err, 'updating the items');
   }
 });
@@ -216,7 +269,8 @@ router.patch('/items/:id', async function (req, res) {
   }
   try {
     await db('UPDATE shopping_list SET bought = ? WHERE id = ?;', [bought, req.params.id]);
-    res.send({ id: Number(req.params.id), bought });
+    const pantryAdded = await syncPantry([Number(req.params.id)], bought);
+    res.send({ id: Number(req.params.id), bought, pantry_added: pantryAdded });
   } catch (err) {
     // the helper rejects when no row changed: either the item is missing or already had this value
     if (err === 'Action not complete') {

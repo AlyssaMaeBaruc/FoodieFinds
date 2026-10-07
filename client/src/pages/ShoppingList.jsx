@@ -62,8 +62,12 @@ const usePhoneShare = () =>
 // how long the "Copied!" tick stays on the Copy button
 const COPIED_MS = 2000;
 
-// one checkbox row: ingredient name, and the planned meals that use it underneath
-function ShoppingItem({ item, onToggle, leaving = false }) {
+// in your Pantry and not bought or "buy anyway" here: goes in "Already have"
+const alreadyHave = (item) => Boolean(item.pantry_name) && !item.bought && !item.buy_anyway;
+
+// one checkbox row: ingredient name, and the planned meals that use it underneath.
+// onHaveEnough: shown on items you have but chose to buy anyway, to undo that
+function ShoppingItem({ item, onToggle, leaving = false, onHaveEnough }) {
   return (
     <li className={`shopping-item${item.bought ? " is-bought" : ""}${leaving ? " is-leaving" : ""}`}>
       <label>
@@ -73,6 +77,11 @@ function ShoppingItem({ item, onToggle, leaving = false }) {
           {item.used_in.length > 0 && <span className="item-used">{item.used_in.join(", ")}</span>}
         </span>
       </label>
+      {onHaveEnough && item.buy_anyway && item.pantry_name && !item.bought && (
+        <button type="button" className="have-enough" onClick={() => onHaveEnough(item)} title="It's in your pantry: move it back to Already have">
+          In pantry · have enough
+        </button>
+      )}
     </li>
   );
 }
@@ -183,6 +192,28 @@ function ShoppingList() {
 
   const toggleBought = (item, options) => setBought([item], !item.bought, options);
 
+  // "Buy anyway": an item you have goes back on the buy list (or back to Already have)
+  const setBuyAnyway = async (targetItems, buyAnyway) => {
+    const ids = targetItems.map((item) => item.id);
+    const change = (value) => setList((current) => ({
+      ...current,
+      items: current.items.map((item) => (ids.includes(item.id) ? { ...item, buy_anyway: value } : item)),
+    }));
+    change(buyAnyway);
+    try {
+      const res = await fetch("/api/shopping-list/items/buy-anyway", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, buy_anyway: buyAnyway }),
+      });
+      if (!res.ok) throw new Error("Couldn't save that change. Please try again.");
+    } catch (err) {
+      change(!buyAnyway);
+      setError(err.message);
+      console.error(err);
+    }
+  };
+
   const shareText = () => buildShareText(`${weekTitle(offset, weekDays)} (${weekDays[0].label} – ${weekDays[6].label})`, items);
 
   const share = async () => {
@@ -214,9 +245,11 @@ function ShoppingList() {
   };
 
   const allItems = list?.items ?? [];
-  // pantry basics go in their own collapsed section; progress counts the main list only
-  const items = allItems.filter((item) => !item.is_pantry);
-  const pantryItems = byName(allItems.filter((item) => item.is_pantry));
+  // what's in your Pantry goes in "Already have"; pantry basics in their own collapsed section;
+  // progress counts the main list only
+  const haveItems = byName(allItems.filter(alreadyHave));
+  const items = allItems.filter((item) => !item.is_pantry && !alreadyHave(item));
+  const pantryItems = byName(allItems.filter((item) => item.is_pantry && !alreadyHave(item)));
   // ticked items leave their aisle (after a short pause) and gather in the basket
   const toBuy = items.filter((item) => !item.bought || settling[item.id]);
   const basket = byName(items.filter((item) => item.bought && !settling[item.id]));
@@ -348,6 +381,7 @@ function ShoppingList() {
                     item={item}
                     leaving={settling[item.id] === "leaving"}
                     onToggle={(it) => toggleBought(it, { animate: true })}
+                    onHaveEnough={(it) => setBuyAnyway([it], false)}
                   />
                 ))}
               </ul>
@@ -364,6 +398,37 @@ function ShoppingList() {
             <p className="all-done-text">Everything on your list is in the basket.</p>
           </div>
         </div>
+      )}
+
+      {haveItems.length > 0 && (
+        <details className="list-drawer already-have glass">
+          <summary className="drawer-summary">
+            <span className="drawer-heading">
+              <span className="basket-heading">
+                Already have
+                <span className="count">{haveItems.length}</span>
+              </span>
+              <span className="drawer-sub">In your <Link to="/pantry" className="hero-link">pantry</Link>, so not on the list. Running low? Buy it anyway.</span>
+            </span>
+            <Icon name="arrowRight" size={18} className="drawer-chevron" />
+          </summary>
+          <ul className="shopping-items drawer-items">
+            {haveItems.map((item) => (
+              <li key={item.id} className="shopping-item have-item">
+                <span className="have-check"><Icon name="check" size={14} /></span>
+                <span className="item-text">
+                  <span className="item-name">{item.ingredient_name}</span>
+                  <span className="item-used">
+                    {item.pantry_name.toLowerCase() !== item.ingredient_name.toLowerCase() ? `In your pantry as ${item.pantry_name}` : "In your pantry"}
+                  </span>
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={() => setBuyAnyway([item], true)}>
+                  <Icon name="plus" size={14} /> Buy anyway
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
 
       {pantryItems.length > 0 && (
