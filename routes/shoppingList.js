@@ -159,6 +159,26 @@ router.post('/generate', async function (req, res) {
   }
 });
 
+// TICK OR UNTICK SEVERAL ITEMS AT ONCE: { ids: [1, 2, 3], bought: true }
+router.patch('/items', async function (req, res) {
+  const { ids, bought } = req.body;
+  if (typeof bought !== 'boolean') {
+    return res.status(400).send({ message: 'bought must be true or false' });
+  }
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500 || !ids.every(Number.isInteger)) {
+    return res.status(400).send({ message: 'ids must be a list of item ids' });
+  }
+  try {
+    // mysql2 expands the array into IN (1, 2, 3)
+    await db('UPDATE shopping_list SET bought = ? WHERE id IN (?);', [bought, ids]);
+    res.send({ ids, bought });
+  } catch (err) {
+    // the helper rejects when no row changed, e.g. every item already had this value
+    if (err === 'Action not complete') return res.send({ ids, bought });
+    sendError(res, err, 'updating the items');
+  }
+});
+
 // TICK OR UNTICK AN ITEM AS BOUGHT
 router.patch('/items/:id', async function (req, res) {
   const { bought } = req.body;

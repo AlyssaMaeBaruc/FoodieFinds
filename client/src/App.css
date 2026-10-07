@@ -1077,57 +1077,78 @@
   color: var(--brown-soft);
 }
 
-.meal-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* one row per recipe: photo, name, total portions and the days it's planned for */
+.recipe-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.meal-chip {
+.recipe-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  padding: 5px 14px 5px 5px;
-  border-radius: 999px;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 14px 8px 8px;
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
 }
 
-.meal-chip img {
+.recipe-row img {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   object-fit: cover;
 }
 
-.meal-chip-text {
+.recipe-row-text {
   display: flex;
   flex-direction: column;
+  gap: 3px;
   min-width: 0;
-  line-height: 1.25;
 }
 
-.meal-chip-title {
-  font-size: 0.88rem;
+.recipe-row-title {
+  font-size: 0.9rem;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 260px;
 }
 
-.meal-chip-slot {
-  font-size: 0.75rem;
+.recipe-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.78rem;
   color: var(--brown-soft);
-  text-transform: capitalize;
 }
 
-.meal-chip.is-skipped {
-  opacity: 0.55;
+.portions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.recipe-row-note {
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
+.recipe-row.is-skipped {
+  opacity: 0.6;
 }
 
 /* one steady column of aisle cards, so nothing reshuffles sideways while ticking */
@@ -1151,12 +1172,19 @@
   to { opacity: 1; transform: none; }
 }
 
-.aisle-title {
+.aisle-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin: 0 0 6px;
+}
+
+.aisle-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -1346,6 +1374,12 @@
   padding: 0 22px 10px;
 }
 
+.drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 22px 4px;
+}
+
 /* "Shopping done" message */
 .all-done {
   display: flex;
@@ -1385,4 +1419,65 @@
   .list-toolbar {
     top: 64px;
   }
+}
+
+/* ---------- Cuisine picker and search results ---------- */
+
+.cuisine-picker {
+  max-width: 760px;
+  margin: 22px auto 18px;
+}
+
+.cuisine-label {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brown-soft);
+}
+
+/* one scrollable row; the edges fade so it's clear there's more */
+.cuisine-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 24px 8px;
+  scrollbar-width: thin;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+
+.cuisine-chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: var(--glass-strong);
+  border: 1px solid var(--hairline);
+  color: var(--brown);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.cuisine-chip:hover {
+  background: #fff;
+}
+
+.cuisine-chip.is-active {
+  background: var(--brown);
+  border-color: var(--brown);
+  color: #fff;
+}
+
+.results-meta {
+  margin: 36px 0 -24px;
+  color: var(--brown-soft);
+  font-size: 0.92rem;
+}
+
+.results-meta strong {
+  color: var(--brown);
+}
+
+.load-more {
+  margin-top: 32px;
 }

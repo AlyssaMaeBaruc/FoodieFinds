@@ -5,11 +5,28 @@ import WeekNav, { useSelectedWeek } from "../components/WeekNav";
 import { parseDateText, weekTitle } from "../week";
 import { isPantryBasic } from "../pantryBasics";
 
-// "2026-10-07" + "lunch" -> "Wed lunch"
+// "2026-10-07" + "lunch" -> "Wed Lunch"
 function slotLabel(meal) {
   const date = parseDateText(meal.plan_date);
   const weekday = date ? date.toLocaleDateString("en-GB", { weekday: "short" }) : "";
-  return `${weekday} ${meal.slot}`;
+  return `${weekday} ${meal.slot.charAt(0).toUpperCase()}${meal.slot.slice(1)}`;
+}
+
+// the same recipe planned on several days becomes one entry with its total portions
+// and the days it's for; meals arrive in plan order, so days stay in order too
+function groupByRecipe(meals) {
+  const recipes = new Map();
+  for (const meal of meals) {
+    const key = meal.saved_meal_id ?? meal.title;
+    const recipe = recipes.get(key);
+    if (recipe) {
+      recipe.portions += meal.servings;
+      recipe.days.push(slotLabel(meal));
+    } else {
+      recipes.set(key, { ...meal, portions: meal.servings, days: [slotLabel(meal)] });
+    }
+  }
+  return [...recipes.values()];
 }
 
 // how long a ticked item stays in its aisle (so the tick registers) before sliding out
@@ -116,32 +133,35 @@ function ShoppingList() {
     }
   };
 
-  const setItemBought = (id, bought) =>
+  const setItemsBought = (ids, bought) =>
     setList((current) => ({
       ...current,
-      items: current.items.map((item) => (item.id === id ? { ...item, bought } : item)),
+      items: current.items.map((item) => (ids.includes(item.id) ? { ...item, bought } : item)),
     }));
 
-  // ticks straight away, and unticks again if saving fails
-  const toggleBought = async (item, { animate = false } = {}) => {
-    const bought = !item.bought;
-    setItemBought(item.id, bought);
-    if (bought && animate) startSettling(item.id);
-    else clearSettling(item.id);
+  // ticks/unticks one or many items straight away (one request), and undoes it if saving fails.
+  // animate: ticked items pause in their aisle, then slide into the basket
+  const setBought = async (targetItems, bought, { animate = false } = {}) => {
+    const ids = targetItems.filter((item) => item.bought !== bought).map((item) => item.id);
+    if (ids.length === 0) return;
+    setItemsBought(ids, bought);
+    ids.forEach((id) => (bought && animate ? startSettling(id) : clearSettling(id)));
     try {
-      const res = await fetch(`/api/shopping-list/items/${item.id}`, {
+      const res = await fetch("/api/shopping-list/items", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bought }),
+        body: JSON.stringify({ ids, bought }),
       });
       if (!res.ok) throw new Error("Couldn't save that change. Please try again.");
     } catch (err) {
-      setItemBought(item.id, !bought);
-      clearSettling(item.id);
+      setItemsBought(ids, !bought);
+      ids.forEach(clearSettling);
       setError(err.message);
       console.error(err);
     }
   };
+
+  const toggleBought = (item, options) => setBought([item], !item.bought, options);
 
   const allItems = list?.items ?? [];
   // pantry basics go in their own collapsed section; progress counts the main list only
@@ -153,6 +173,7 @@ function ShoppingList() {
   const boughtCount = items.filter((item) => item.bought).length;
   const pantryChecked = pantryItems.filter((item) => item.bought).length;
   const hasList = Boolean(list?.generated_at);
+  const recipes = groupByRecipe(list?.meals ?? []);
   const nothingPlanned = list && list.planned_meal_count === 0;
   const generatedAt = hasList
     ? new Date(list.generated_at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
@@ -210,19 +231,25 @@ function ShoppingList() {
         </div>
       )}
 
-      {hasList && list.meals.length > 0 && (
+      {hasList && recipes.length > 0 && (
         <section className="made-from">
-          <h2 className="made-from-title">Made from {list.meals.length} {list.meals.length === 1 ? "meal" : "meals"}</h2>
-          <ul className="meal-chips">
-            {list.meals.map((meal) => (
-              <li key={meal.plan_id} className={`meal-chip glass${meal.skipped ? " is-skipped" : ""}`}>
-                <img src={meal.image} alt="" />
-                <span className="meal-chip-text">
-                  <span className="meal-chip-title">{meal.title}</span>
-                  <span className="meal-chip-slot">
-                    {slotLabel(meal)}
-                    {meal.skipped && " · no recipe details, not included"}
+          <h2 className="made-from-title">
+            Made from {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"}
+            {recipes.length !== list.meals.length && ` · ${list.meals.length} meals`}
+          </h2>
+          <ul className="recipe-rows">
+            {recipes.map((recipe) => (
+              <li key={recipe.saved_meal_id ?? recipe.title} className={`recipe-row glass${recipe.skipped ? " is-skipped" : ""}`}>
+                <img src={recipe.image} alt="" />
+                <span className="recipe-row-text">
+                  <span className="recipe-row-title">{recipe.title}</span>
+                  <span className="recipe-row-meta">
+                    <span className="portions">
+                      <Icon name="utensils" size={13} /> {recipe.portions} {recipe.portions === 1 ? "portion" : "portions"}
+                    </span>
+                    <span className="recipe-row-days">{recipe.days.join(", ")}</span>
                   </span>
+                  {recipe.skipped && <span className="recipe-row-note">No recipe details, so not included in the list</span>}
                 </span>
               </li>
             ))}
@@ -238,10 +265,19 @@ function ShoppingList() {
         <div className="aisle-list">
           {groupByAisle(toBuy).map((group) => (
             <section key={group.aisle} className="aisle-card glass">
-              <h2 className="aisle-title">
-                {group.aisle}
-                <span className="count">{group.items.filter((item) => !item.bought).length}</span>
-              </h2>
+              <div className="aisle-header">
+                <h2 className="aisle-title">
+                  {group.aisle}
+                  <span className="count">{group.items.filter((item) => !item.bought).length}</span>
+                </h2>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setBought(group.items, true, { animate: true })}
+                  aria-label={`Tick all ${group.aisle} items`}
+                >
+                  <Icon name="check" size={14} /> Tick all
+                </button>
+              </div>
               <ul className="shopping-items">
                 {group.items.map((item) => (
                   <ShoppingItem
@@ -279,6 +315,17 @@ function ShoppingList() {
             </span>
             <Icon name="arrowRight" size={18} className="drawer-chevron" />
           </summary>
+          <div className="drawer-actions">
+            {pantryChecked < pantryItems.length ? (
+              <button className="btn btn-ghost btn-sm" onClick={() => setBought(pantryItems, true)}>
+                <Icon name="check" size={14} /> I have all of these
+              </button>
+            ) : (
+              <button className="btn btn-ghost btn-sm" onClick={() => setBought(pantryItems, false)}>
+                <Icon name="x" size={14} /> Clear all
+              </button>
+            )}
+          </div>
           <ul className="shopping-items drawer-items">
             {pantryItems.map((item) => (
               <ShoppingItem key={item.id} item={item} onToggle={toggleBought} />
@@ -300,6 +347,11 @@ function ShoppingList() {
             </span>
             <Icon name="arrowRight" size={18} className="drawer-chevron" />
           </summary>
+          <div className="drawer-actions">
+            <button className="btn btn-ghost btn-sm" onClick={() => setBought(basket, false)}>
+              <Icon name="arrowLeft" size={14} /> Put all back on the list
+            </button>
+          </div>
           <ul className="shopping-items drawer-items">
             {basket.map((item) => (
               <ShoppingItem key={item.id} item={item} onToggle={toggleBought} />

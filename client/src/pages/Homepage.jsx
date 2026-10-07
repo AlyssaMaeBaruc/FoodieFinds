@@ -3,11 +3,20 @@ import RecipesList from '../components/RecipesList'; // Adjust the import path b
 import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from '../spoonacular';
 import Icon from '../components/Icon';
 
+// cuisines Spoonacular's recipe search can filter by
+const CUISINES = [
+  "African", "American", "Asian", "British", "Cajun", "Caribbean", "Chinese",
+  "Eastern European", "European", "French", "German", "Greek", "Indian", "Irish",
+  "Italian", "Japanese", "Jewish", "Korean", "Latin American", "Mediterranean",
+  "Mexican", "Middle Eastern", "Nordic", "Southern", "Spanish", "Thai", "Vietnamese",
+];
 
+// recipes per page of results (each search or "Load more" costs about 1 quota point)
+const PAGE_SIZE = 24;
 
 function Homepage() {
 
-  const apiUrl = `${SPOONACULAR_BASE_URL}/recipes/findByIngredients`;
+  const apiUrl = `${SPOONACULAR_BASE_URL}/recipes/complexSearch`;
   const apiKey = SPOONACULAR_API_KEY;
 
   // this is for the users to input their ingredients 
@@ -21,6 +30,14 @@ function Homepage() {
 
   //for error 
   const [error,setError] = useState(null);
+
+  // cuisine filter ("" = any), and paging through results
+  const [cuisine, setCuisine] = useState("");
+  const [totalResults, setTotalResults] = useState(0);
+  // the search the current results came from, so "Load more" continues it
+  // even if the ingredients or cuisine were changed afterwards
+  const [lastSearch, setLastSearch] = useState(null);
+  const [searching, setSearching] = useState(false);
 
   // for checking typed ingredients before they are added
   const [ingredientError, setIngredientError] = useState(null);
@@ -36,8 +53,11 @@ function Homepage() {
 
 // create a function when we press find recipes button
   function handleSubmit() {
-    getRecipes();
-    console.log("Ingredients are submitted")
+    if (addedIngredients.length === 0 && !cuisine) {
+      setError("Add an ingredient or pick a cuisine first.");
+      return;
+    }
+    getRecipes({ ingredients: addedIngredients, cuisine }, 0);
   };
 
   // escape regex characters so ingredients like "half & half" match literally
@@ -123,32 +143,41 @@ function Homepage() {
       });
   }
 
-// function for the find recipes submit button
-  const getRecipes = () => {
-   fetch(`${apiUrl}?apiKey=${apiKey}&ingredients=${addedIngredients.join(",")}`)
-  .then((response) => {
-    // this is if there is something wrong with the database 
-    if(!response.ok) {
-      throw new Error ("please try again later");
+// searches Spoonacular's full recipe database; offset > 0 adds the next page ("Load more")
+  const getRecipes = async (search, offset) => {
+    const params = new URLSearchParams({ apiKey, number: PAGE_SIZE, offset });
+    if (search.ingredients.length > 0) {
+      params.set("includeIngredients", search.ingredients.join(","));
+      // recipes using the most of your ingredients first
+      params.set("sort", "max-used-ingredients");
+    } else {
+      params.set("sort", "popularity");
     }
-    return response.json();
-  })
-  // placed an error for cases where the response could not be read or does not match the expected 
-  .then((response) => {
-    console.log(response);
-    if (!Array.isArray(response) || response.length === 0) {
-      throw new Error("Invalid Ingredient"); 
-};
-// else if it contains data that can be read then clear the error 
-  setRecipes(response);
-  setError(null);
-  })
-  .catch((error) => {
-    setError(error.message);
-    console.error(error);
-  });
+    if (search.cuisine) params.set("cuisine", search.cuisine);
 
-};
+    setSearching(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}?${params}`);
+      if (response.status === 402) throw new Error("Daily recipe limit reached. Please try again tomorrow.");
+      if (!response.ok) throw new Error("Couldn't search recipes right now. Please try again later.");
+      const data = await response.json();
+
+      if (offset === 0 && data.results.length === 0) {
+        setRecipes([]);
+        setTotalResults(0);
+        throw new Error("No recipes found. Try fewer ingredients or another cuisine.");
+      }
+      setRecipes((current) => (offset === 0 ? data.results : [...current, ...data.results]));
+      setTotalResults(data.totalResults);
+      setLastSearch(search);
+    } catch (error) {
+      setError(error.message);
+      console.error(error);
+    } finally {
+      setSearching(false);
+    }
+  };
 
 
   return (
@@ -193,10 +222,43 @@ function Homepage() {
         </li>
       ))}
     </ul>
-    <button onClick={handleSubmit} className="btn btn-accent find-button"><Icon name="search" size={18} /> Find recipes</button>
+    <div className="cuisine-picker">
+      <p className="cuisine-label">Cuisine</p>
+      <div className="cuisine-chips" role="radiogroup" aria-label="Cuisine">
+        {["", ...CUISINES].map((name) => (
+          <button
+            key={name || "any"}
+            type="button"
+            role="radio"
+            aria-checked={cuisine === name}
+            className={`cuisine-chip${cuisine === name ? " is-active" : ""}`}
+            onClick={() => setCuisine(name)}
+          >
+            {name || "Any"}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <button onClick={handleSubmit} className="btn btn-accent find-button" disabled={searching && recipes.length === 0}>
+      <Icon name="search" size={18} /> {searching && recipes.length === 0 ? "Searching…" : "Find recipes"}
+    </button>
     {error && <div className="error-message glass"><Icon name="alert" size={18} /> {error}</div>}
 
+    {recipes.length > 0 && (
+      <p className="results-meta">
+        Showing <strong>{recipes.length}</strong> of {totalResults.toLocaleString("en-GB")} recipes
+        {lastSearch?.cuisine && <> · {lastSearch.cuisine}</>}
+      </p>
+    )}
+
     <RecipesList recipes={recipes} saveMeal={saveMeal} showSaveButton={true}/>
+
+    {recipes.length > 0 && recipes.length < totalResults && (
+      <button className="btn btn-ghost load-more" onClick={() => getRecipes(lastSearch, recipes.length)} disabled={searching}>
+        {searching ? "Loading…" : <>Load more recipes <Icon name="arrowRight" size={16} /></>}
+      </button>
+    )}
     </main>
 
   )
