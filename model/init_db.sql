@@ -3,6 +3,8 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists cached_recipe_ingredients;
+DROP TABLE if exists cached_recipes;
 DROP TABLE if exists ingredient_translations;
 DROP TABLE if exists custom_ingredients;
 DROP TABLE if exists shopping_list;
@@ -75,4 +77,20 @@ CREATE TABLE ingredient_translations (
     spanish VARCHAR(255) PRIMARY KEY,
     english VARCHAR(255) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+-- cache of Spoonacular recipes' ingredients (as shopping names), used by "Fill my week"
+CREATE TABLE cached_recipes (
+    spoonacular_id INT PRIMARY KEY,
+    ready_in_minutes INT NULL,
+    fetched_at DATETIME NOT NULL
+    );
+
+CREATE TABLE cached_recipe_ingredients (
+    spoonacular_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    aisle VARCHAR(100) NULL,
+    PRIMARY KEY (spoonacular_id, name),
+    CONSTRAINT fk_cached_ingredients_recipe
+        FOREIGN KEY (spoonacular_id) REFERENCES cached_recipes(spoonacular_id) ON DELETE CASCADE
     );

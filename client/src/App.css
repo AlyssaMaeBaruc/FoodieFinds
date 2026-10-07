@@ -1874,3 +1874,130 @@
     border-radius: var(--radius);
   }
 }
+
+/* ---------- Fill my week ---------- */
+
+.fill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  margin: -6px 0 22px;
+}
+
+.fill-hint {
+  font-size: 0.88rem;
+  color: var(--brown-soft);
+}
+
+.preview-bar {
+  position: sticky;
+  top: 80px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  max-width: 1000px;
+  margin: -6px auto 22px;
+  padding: 14px 16px 14px 22px;
+  border-color: rgba(226, 104, 58, 0.45);
+  background: rgba(255, 246, 238, 0.9);
+  text-align: left;
+}
+
+.preview-text {
+  flex: 1;
+  min-width: 240px;
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 800;
+  color: var(--accent-hover);
+}
+
+.preview-notes {
+  margin: 2px 0 0;
+  font-size: 0.86rem;
+  color: var(--brown-soft);
+}
+
+.preview-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* suggested cards: dashed orange border and a label */
+.recipe-card.is-suggested {
+  border: 2px dashed var(--accent);
+  background: rgba(255, 244, 235, 0.75);
+  box-shadow: none;
+}
+
+.recipe-card.is-suggested.is-shuffling {
+  opacity: 0.5;
+}
+
+.suggested-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.shuffle-button {
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+}
+
+.shuffle-button:hover {
+  color: var(--accent);
+}
+
+.shuffle-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+.suggest-detail {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--brown-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .preview-bar {
+    top: 64px;
+  }
+}

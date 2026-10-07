@@ -4,6 +4,8 @@ const db = require('../model/helper');
 const { parseDate, weekRange } = require('../model/dates');
 const { buildShoppingList } = require('../model/shoppingList');
 const { spoonacular, SpoonacularError } = require('../model/spoonacular');
+const { cacheRecipes } = require('../model/recipeIngredients');
+const { isPantryBasic } = require('../model/pantryBasics');
 
 // errors with a status code and a message that is safe to show in the app
 class ListError extends Error {
@@ -49,6 +51,8 @@ const recipeKey = (meal) => (meal.spoonacular_id ? `s:${meal.spoonacular_id}` : 
 async function fetchRecipes(ids) {
   try {
     const recipes = await spoonacular('/recipes/informationBulk', { query: { ids: ids.join(','), includeNutrition: false } });
+    // refresh the ingredient cache for "Fill my week" at no extra cost
+    await cacheRecipes(recipes).catch((err) => console.error('Error caching recipes', err));
     return recipes.map((recipe) => [`s:${recipe.id}`, recipe]);
   } catch (err) {
     if (err instanceof SpoonacularError) throw new ListError(err.status, err.message);
@@ -103,6 +107,8 @@ async function loadList(start, end) {
       ...item,
       bought: Boolean(item.bought),
       used_in: parseJson(item.used_in, []),
+      // pantry basics (model/pantryBasics.js) go in the "Check your pantry" section
+      is_pantry: isPantryBasic(item.ingredient_name),
     })),
   };
 }

@@ -1,0 +1,112 @@
+// "Fill my week": picks a saved meal for each empty slot, favouring recipes that are
+// easy to make with what the week already needs (so the shopping list stays short).
+// Pure functions (no database or network) so they are easy to test.
+
+// --- Tuning (edit freely) ------------------------------------------------------
+const WEIGHTS = {
+  coverage: 3,        // x share of the recipe's ingredients already being bought (0..1)
+  newIngredient: -0.4, // per extra ingredient it would add to the shopping list
+  fewIngredients: 0.5, // recipe with up to 6 ingredients (0.25 for up to 10)
+  quick: 0.4,          // ready in 30 minutes or less (0.2 for up to 45)
+  repeat: -1.5,        // meal is already in the week once (cook once, eat twice)
+  lastWeek: -1.5,      // meal was planned the week before
+};
+const MAX_USES_PER_WEEK = 2;
+// pick randomly among this many best candidates, favouring the best...
+const TOP_CHOICES = [0.6, 0.3, 0.1];
+// ...but only among those scoring within this much of the best one
+const MAX_SCORE_GAP = 1;
+// -----------------------------------------------------------------------------
+
+function easyBonus(meal) {
+  const count = meal.ingredients.length;
+  let bonus = count <= 6 ? WEIGHTS.fewIngredients : count <= 10 ? WEIGHTS.fewIngredients / 2 : 0;
+  if (meal.minutes) bonus += meal.minutes <= 30 ? WEIGHTS.quick : meal.minutes <= 45 ? WEIGHTS.quick / 2 : 0;
+  return bonus;
+}
+
+// how well a meal fits the week so far, plus what it shares and adds
+// weekIngredients: Map of ingredient name -> how many meals in the week use it
+// uses: how many times this meal is already in the week
+function scoreMeal(meal, weekIngredients, uses, lastWeekIds) {
+  // a repeat only "shares" ingredients that OTHER meals also use (not just its own),
+  // and adds nothing new to the shopping list
+  const usedByOthers = (name) => (weekIngredients.get(name) ?? 0) - uses > 0;
+  const shared = meal.ingredients.filter(usedByOthers);
+  const added = uses > 0 ? [] : meal.ingredients.filter((name) => !weekIngredients.has(name));
+  const coverage = meal.ingredients.length > 0 ? shared.length / meal.ingredients.length : 0;
+
+  let score = WEIGHTS.coverage * coverage + WEIGHTS.newIngredient * added.length + easyBonus(meal);
+  if (uses > 0) score += WEIGHTS.repeat;
+  if (lastWeekIds.has(meal.saved_meal_id)) score += WEIGHTS.lastWeek;
+  return { score, shared, added };
+}
+
+// weighted random pick among the best few
+function pickTop(scored, random) {
+  const top = scored.slice(0, TOP_CHOICES.length).filter((c) => c.score >= scored[0].score - MAX_SCORE_GAP);
+  const weights = TOP_CHOICES.slice(0, top.length);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let roll = random() * total;
+  for (let i = 0; i < top.length; i += 1) {
+    roll -= weights[i];
+    if (roll <= 0) return top[i];
+  }
+  return top[top.length - 1];
+}
+
+// library: [{ saved_meal_id, title, image, spoonacular_id, is_custom, ingredients: [names], minutes }]
+//          (ingredients already without pantry basics)
+// fixed:   [{ plan_date, saved_meal_id }] meals already in the week (planned + suggestions being kept)
+// slots:   [{ plan_date, slot }] empty slots to fill, in the order to fill them
+// avoidIds: saved meal ids not to suggest (e.g. what a shuffled slot had before)
+// returns { suggestions: [...], unfilled: [{ plan_date, slot }] }
+function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = new Set(), random = Math.random }) {
+  const byId = new Map(library.map((meal) => [meal.saved_meal_id, meal]));
+  const uses = new Map();
+  const weekIngredients = new Map();
+  // date -> meal ids on that day, so a meal is never eaten twice the same day
+  const byDate = new Map();
+  const addToWeek = (id, date) => {
+    uses.set(id, (uses.get(id) ?? 0) + 1);
+    for (const name of byId.get(id)?.ingredients ?? []) weekIngredients.set(name, (weekIngredients.get(name) ?? 0) + 1);
+    if (!byDate.has(date)) byDate.set(date, new Set());
+    byDate.get(date).add(id);
+  };
+  fixed.forEach((meal) => addToWeek(meal.saved_meal_id, meal.plan_date));
+
+  const suggestions = [];
+  const unfilled = [];
+  for (const slot of slots) {
+    const sameDay = byDate.get(slot.plan_date) ?? new Set();
+    const scored = library
+      .filter((meal) => (uses.get(meal.saved_meal_id) ?? 0) < MAX_USES_PER_WEEK
+        && !avoidIds.has(meal.saved_meal_id)
+        && !sameDay.has(meal.saved_meal_id))
+      .map((meal) => ({ meal, ...scoreMeal(meal, weekIngredients, uses.get(meal.saved_meal_id) ?? 0, lastWeekIds) }))
+      .sort((a, b) => b.score - a.score);
+
+    if (scored.length === 0) {
+      unfilled.push(slot);
+      continue;
+    }
+    const choice = pickTop(scored, random);
+    suggestions.push({
+      ...slot,
+      saved_meal_id: choice.meal.saved_meal_id,
+      title: choice.meal.title,
+      image: choice.meal.image,
+      spoonacular_id: choice.meal.spoonacular_id,
+      is_custom: Boolean(choice.meal.is_custom),
+      shared: choice.shared,
+      added: choice.added,
+      minutes: choice.meal.minutes,
+      repeat: (uses.get(choice.meal.saved_meal_id) ?? 0) > 0,
+      from_last_week: lastWeekIds.has(choice.meal.saved_meal_id),
+    });
+    addToWeek(choice.meal.saved_meal_id, slot.plan_date);
+  }
+  return { suggestions, unfilled };
+}
+
+module.exports = { fillWeek, scoreMeal, WEIGHTS };

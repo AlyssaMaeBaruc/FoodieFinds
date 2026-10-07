@@ -9,7 +9,7 @@ import RecipeImage from './RecipeImage';
 // `link` overrides where the card goes (custom recipes open /my-recipe/:id).
 // `onSelect` turns the whole card into a checkbox (select mode): tapping selects it
 // instead of opening the recipe, and `selected` shows whether it's ticked.
-function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, onSelect, selected = false, children }) {
+function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, onSelect, selected = false, className = "", children }) {
   const selecting = Boolean(onSelect);
   const recipeLink = selecting ? null : link ?? (spoonacularId ? `/recipe/${spoonacularId}` : null);
 
@@ -31,7 +31,7 @@ function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compac
 
   return (
     <Tag
-      className={`recipe-card glass${compact ? " is-compact" : ""}${selecting ? " is-selectable" : ""}${selected ? " is-selected" : ""}`}
+      className={`recipe-card glass${compact ? " is-compact" : ""}${selecting ? " is-selectable" : ""}${selected ? " is-selected" : ""} ${className}`}
       {...selectProps}
     >
       <div className="card-media">

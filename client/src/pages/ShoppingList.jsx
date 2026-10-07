@@ -4,7 +4,6 @@ import Icon from "../components/Icon";
 import RecipeImage from "../components/RecipeImage";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
 import { parseDateText, weekTitle } from "../week";
-import { isPantryBasic } from "../pantryBasics";
 
 // "2026-10-07" + "lunch" -> "Wed Lunch"
 function slotLabel(meal) {
@@ -166,8 +165,8 @@ function ShoppingList() {
 
   const allItems = list?.items ?? [];
   // pantry basics go in their own collapsed section; progress counts the main list only
-  const items = allItems.filter((item) => !isPantryBasic(item.ingredient_name));
-  const pantryItems = byName(allItems.filter((item) => isPantryBasic(item.ingredient_name)));
+  const items = allItems.filter((item) => !item.is_pantry);
+  const pantryItems = byName(allItems.filter((item) => item.is_pantry));
   // ticked items leave their aisle (after a short pause) and gather in the basket
   const toBuy = items.filter((item) => !item.bought || settling[item.id]);
   const basket = byName(items.filter((item) => item.bought && !settling[item.id]));
