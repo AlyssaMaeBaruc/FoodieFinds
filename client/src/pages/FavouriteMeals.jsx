@@ -13,6 +13,13 @@ function FavouriteMeals() {
     // "Add recipe" pop-up
     const [adding, setAdding] = useState(false);
 
+    // select mode: pick several meals (or all) and delete them together
+    const [selecting, setSelecting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [confirming, setConfirming] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [error, setError] = useState(null);
+
 
   const listOfSavedMeals = () => {
 fetch("/api/recipes")
@@ -34,22 +41,49 @@ fetch("/api/recipes")
       }, []);
 
 
-      const deleteSavedMeal = (id) => {
-        fetch(`/api/recipes/${id}`, {
-          method: "DELETE"
-        })
-        .then((res) => {
-          if (res.ok) {
-            // Remove the deleted meal from the mealList
-            setMealList(mealList.filter((meal) => meal.id !== id));
-          } else {
-            throw new Error("Failed to delete meal");
-          }
-        })
-        .catch((error) => {
-          console.error("Error deleting meal:", error);
+      const stopSelecting = () => {
+        setSelecting(false);
+        setSelectedIds(new Set());
+        setConfirming(false);
+      };
+
+      const toggleSelected = (id) => {
+        setConfirming(false);
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
         });
-      }
+      };
+
+      const allSelected = mealList.length > 0 && selectedIds.size === mealList.length;
+      const toggleSelectAll = () => {
+        setConfirming(false);
+        setSelectedIds(allSelected ? new Set() : new Set(mealList.map((meal) => meal.id)));
+      };
+
+      // one request for all selected meals
+      const deleteSelected = async () => {
+        const ids = [...selectedIds];
+        setDeleting(true);
+        setError(null);
+        try {
+          const res = await fetch("/api/recipes", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids }),
+          });
+          if (!res.ok) throw new Error("Couldn't delete those meals. Please try again.");
+          setMealList((current) => current.filter((meal) => !selectedIds.has(meal.id)));
+          stopSelecting();
+        } catch (err) {
+          setError(err.message);
+          console.error("Error deleting meals:", err);
+        } finally {
+          setDeleting(false);
+        }
+      };
 
       return (
         <main className="page">
@@ -61,6 +95,48 @@ fetch("/api/recipes")
             <Icon name="plus" size={16} /> Add recipe
           </button>
         </section>
+        {mealList.length > 0 && (
+          <div className={`select-bar glass${selecting ? " is-active" : ""}`}>
+            {!selecting ? (
+              <>
+                <span className="select-count">
+                  <strong>{mealList.length}</strong> saved {mealList.length === 1 ? "meal" : "meals"}
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelecting(true)}>
+                  <Icon name="check" size={14} /> Select
+                </button>
+              </>
+            ) : confirming ? (
+              <>
+                <span className="select-count">
+                  Delete <strong>{selectedIds.size}</strong> {selectedIds.size === 1 ? "meal" : "meals"}? They'll also be removed from your meal plan.
+                </span>
+                <div className="select-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => setConfirming(false)} disabled={deleting}>Keep</button>
+                  <button className="btn btn-danger btn-sm" onClick={deleteSelected} disabled={deleting}>
+                    <Icon name="trash" size={14} /> {deleting ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="select-count">
+                  <strong>{selectedIds.size}</strong> selected
+                </span>
+                <div className="select-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={toggleSelectAll}>
+                    {allSelected ? "Deselect all" : "Select all"}
+                  </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => setConfirming(true)} disabled={selectedIds.size === 0}>
+                    <Icon name="trash" size={14} /> Delete
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={stopSelecting}>Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        {error && <div className="error-message glass"><Icon name="alert" size={18} /> {error}</div>}
         {mealList.length === 0 && <p className="empty-state">No saved meals yet. Tap the heart on any recipe, or add your own with Add recipe.</p>}
         {/* i transferred all of this to the components recipeslist as im using the same logic */}
           {/* <div >
@@ -76,8 +152,8 @@ fetch("/api/recipes")
             <RecipesList
               recipes={mealList}
               showSaveButton={false}
-              deleteMeal={deleteSavedMeal}
               renderActions={(meal) => <AddToWeekPicker meal={meal} />}
+              selection={selecting ? { selectedIds, onToggle: toggleSelected } : undefined}
             />
             <AddRecipeDialog
               open={adding}

@@ -7,12 +7,39 @@ import RecipeImage from './RecipeImage';
 // `meta` is a small line under the title (e.g. portions); `children` are the buttons below it;
 // `mediaAction` is an extra round button on the photo (e.g. delete).
 // `link` overrides where the card goes (custom recipes open /my-recipe/:id).
-function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, children }) {
-  const recipeLink = link ?? (spoonacularId ? `/recipe/${spoonacularId}` : null);
+// `onSelect` turns the whole card into a checkbox (select mode): tapping selects it
+// instead of opening the recipe, and `selected` shows whether it's ticked.
+function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compact = false, as: Tag = "li", meta, mediaAction, onSelect, selected = false, children }) {
+  const selecting = Boolean(onSelect);
+  const recipeLink = selecting ? null : link ?? (spoonacularId ? `/recipe/${spoonacularId}` : null);
+
+  const selectProps = selecting
+    ? {
+        role: "checkbox",
+        "aria-checked": selected,
+        "aria-label": title,
+        tabIndex: 0,
+        onClick: onSelect,
+        onKeyDown: (e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            onSelect();
+          }
+        },
+      }
+    : {};
 
   return (
-    <Tag className={`recipe-card glass${compact ? " is-compact" : ""}`}>
+    <Tag
+      className={`recipe-card glass${compact ? " is-compact" : ""}${selecting ? " is-selectable" : ""}${selected ? " is-selected" : ""}`}
+      {...selectProps}
+    >
       <div className="card-media">
+        {selecting && (
+          <span className="select-badge" aria-hidden="true">
+            <Icon name="check" size={16} />
+          </span>
+        )}
         {recipeLink ? (
           <Link to={recipeLink} aria-label={`View recipe for ${title}`}>
             <RecipeImage src={image} alt={title} />
@@ -21,7 +48,7 @@ function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compac
           <RecipeImage src={image} alt={title} />
         )}
         {/* adding a favourite button for every meal that appears  */}
-        {onSave && (
+        {onSave && !selecting && (
           <button
             className={`fav-button${isSaved ? " is-saved" : ""}`}
             onClick={onSave}
@@ -32,11 +59,11 @@ function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compac
             <Icon name="heart" size={20} />
           </button>
         )}
-        {mediaAction}
+        {!selecting && mediaAction}
       </div>
       <h4>{recipeLink ? <Link to={recipeLink} className="recipe-title-link">{title}</Link> : title}</h4>
       {meta && <p className="card-meta">{meta}</p>}
-      {children && <div className="card-actions">{children}</div>}
+      {children && !selecting && <div className="card-actions">{children}</div>}
     </Tag>
   );
 }

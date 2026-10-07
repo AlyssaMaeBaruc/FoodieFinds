@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import RecipeCard from './RecipeCard';
 import Icon from './Icon';
 
-// renderActions(recipe) lets a page add its own buttons to each card
-function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActions }) {
+// renderActions(recipe) lets a page add its own buttons to each card.
+// selection = { selectedIds: Set, onToggle(id) } puts the cards in select mode.
+function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActions, selection }) {
   // titles saved during this visit, so the heart stays filled
   const [savedTitles, setSavedTitles] = useState([]);
 
@@ -30,6 +31,8 @@ function RecipesList({ recipes, saveMeal, showSaveButton, deleteMeal, renderActi
             link={link}
             onSave={showSaveButton ? () => handleSave(recipe) : null}
             isSaved={savedTitles.includes(recipe.title)}
+            onSelect={selection ? () => selection.onToggle(recipe.id) : undefined}
+            selected={selection ? selection.selectedIds.has(recipe.id) : false}
             mediaAction={deleteMeal && (
               <button
                 className="photo-button delete-button"

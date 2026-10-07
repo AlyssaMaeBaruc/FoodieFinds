@@ -47,6 +47,25 @@ router.get("/", async function(req, res, next) {
 });
  
 
+// DELETE SEVERAL SAVED MEALS AT ONCE: { ids: [1, 2, 3] }
+// (their planned meals and custom ingredients go too, via ON DELETE CASCADE)
+router.delete("/", async function(req, res) {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500 || !ids.every(Number.isInteger)) {
+    return res.status(400).send({ message: 'ids must be a list of saved meal ids' });
+  }
+  try {
+    // mysql2 expands the array into IN (1, 2, 3)
+    await db("DELETE FROM saved_meals WHERE id IN (?);", [ids]);
+    res.send({ deleted: ids });
+  } catch (err) {
+    // the helper rejects when nothing was deleted, e.g. they were already gone
+    if (err === 'Action not complete') return res.send({ deleted: [] });
+    console.error('Error deleting saved meals', err);
+    res.status(500).send({ message: 'Something went wrong deleting those meals. Please try again.' });
+  }
+});
+
 // DELETE SAVED OR FAVORITED MEALS 
 
 router.delete ("/:id", async function(req, res, next) {

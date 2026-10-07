@@ -1773,3 +1773,104 @@
     padding: 18px;
   }
 }
+
+/* ---------- Select mode on My Saved Meals ---------- */
+
+.select-bar {
+  position: sticky;
+  top: 80px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 8px 0 -20px;
+  padding: 10px 12px 10px 20px;
+  border-radius: 999px;
+  text-align: left;
+}
+
+.select-bar.is-active {
+  border-color: rgba(226, 104, 58, 0.4);
+  background: rgba(255, 248, 242, 0.85);
+}
+
+.select-count {
+  font-size: 0.92rem;
+  color: var(--brown-soft);
+}
+
+.select-count strong {
+  color: var(--brown);
+}
+
+.select-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #9a1f18;
+}
+
+.btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* cards in select mode */
+.recipe-card.is-selectable {
+  cursor: pointer;
+}
+
+.recipe-card.is-selectable:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.select-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(63, 38, 24, 0.25);
+  color: transparent;
+  box-shadow: 0 2px 8px rgba(63, 38, 24, 0.25);
+  transition: background-color 0.15s, color 0.15s, transform 0.15s var(--ease);
+}
+
+.recipe-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow-hover);
+}
+
+.recipe-card.is-selected .select-badge {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.recipe-card.is-selected img,
+.recipe-card.is-selected .image-placeholder {
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .select-bar {
+    top: 64px;
+    border-radius: var(--radius);
+  }
+}
