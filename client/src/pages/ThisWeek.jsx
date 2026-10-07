@@ -5,13 +5,29 @@ import MealChooser from "../components/MealChooser";
 import Icon from "../components/Icon";
 import GradeBadge from "../components/GradeBadge";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
-import { todayText, weekTitle, SLOTS } from "../week";
+import { todayText, SLOTS } from "../week";
 
 const GRADES = ["A", "B", "C", "D", "E"];
 const isGood = (grade) => grade === "A" || grade === "B";
 // the A/B goal can be set from 1 to 14 (two meals a day)
 const GOAL_MIN = 1;
 const GOAL_MAX = 14;
+
+// "Good evening" (with a sun or moon) for the landing page
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return { text: "Good morning", icon: "sun" };
+  if (hour < 18) return { text: "Good afternoon", icon: "sun" };
+  return { text: "Good evening", icon: "moon" };
+}
+
+// the header title for the week being looked at ("19 Oct" from "Mon 19 Oct")
+function weekHeading(offset, weekDays) {
+  if (offset === 0) return <>What's cooking <span>this week</span>?</>;
+  if (offset === 1) return <>Planning <span>next week</span></>;
+  if (offset === -1) return <>Looking back at <span>last week</span></>;
+  return <>Week of <span>{weekDays[0].label.split(" ").slice(1).join(" ")}</span></>;
+}
 
 // "A 2 · B 1 · C 3": how many meals have each grade
 function gradeCounts(meals) {
@@ -47,6 +63,29 @@ function ThisWeek() {
   // meals already shown in each slot while shuffling, so shuffles don't bounce back
   const [triedIds, setTriedIds] = useState({});
   const [previewNote, setPreviewNote] = useState(null);
+
+  // header chips: what's left on this week's shopping list, and pantry items to use soon
+  const [toBuyCount, setToBuyCount] = useState(null);
+  const [useSoonCount, setUseSoonCount] = useState(null);
+
+  useEffect(() => {
+    let current = true;
+    fetch(`/api/shopping-list?week=${weekStart}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((list) => {
+        if (!current) return;
+        const left = list?.generated_at
+          ? list.items.filter((item) => !item.bought && !item.is_pantry && !(item.pantry_name && !item.buy_anyway)).length
+          : null;
+        setToBuyCount(left);
+      })
+      .catch(() => current && setToBuyCount(null));
+    fetch("/api/pantry")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((items) => current && setUseSoonCount(items.filter((item) => item.use_soon).length))
+      .catch(() => current && setUseSoonCount(null));
+    return () => { current = false; };
+  }, [weekStart, reloadKey]);
 
   // weekly rules (the same for every week): { min_good_grades: { value, enabled } }
   const [rules, setRules] = useState(null);
@@ -278,7 +317,10 @@ function ThisWeek() {
   const unfilledCount = preview?.unfilled.length ?? 0;
   const repeatCount = preview?.suggestions.filter((s) => s.repeat).length ?? 0;
   const lastWeekCount = preview?.suggestions.filter((s) => s.from_last_week).length ?? 0;
-  const [firstWord, ...rest] = weekTitle(offset, weekDays).split(" ");
+  const hello = greeting();
+  const todayDay = offset === 0 ? weekDays.find((day) => day.date === today) : null;
+  const plannedCount = meals.length;
+  const slotCount = weekDays.length * SLOTS.length;
 
   // the week's mix of health grades; suggestions count separately while previewing
   const goodGoal = rules?.min_good_grades;
@@ -292,13 +334,58 @@ function ThisWeek() {
 
   return (
     <main className="page page-wide">
-      <section className="hero">
-        <p className="eyebrow">Meal plan</p>
-        <h1 className="hero-title">{firstWord} <span>{rest.join(" ")}</span></h1>
-        <p className="hero-text">
-          {weekDays[0].label} – {weekDays[6].label}. Plan lunches and dinners from{" "}
-          <Link to="/favourites" className="hero-link">your saved meals</Link>.
+      <section className="hero home-hero">
+        <p className="eyebrow">
+          {offset === 0 ? <><Icon name={hello.icon} size={13} /> {hello.text}</> : "Meal plan"}
         </p>
+        <h1 className="hero-title">{weekHeading(offset, weekDays)}</h1>
+        <p className="hero-text">
+          {weekDays[0].label} – {weekDays[6].label}
+          {!loading && <> · <strong>{plannedCount}</strong> of {slotCount} meals planned</>}
+        </p>
+
+        {todayDay && !loading && (
+          <div className="today-card glass">
+            <p className="today-label">Today, {todayDay.label}</p>
+            <ul className="today-meals">
+              {SLOTS.map((slot) => {
+                const meal = mealFor(today, slot);
+                return (
+                  <li key={slot}>
+                    <span className="today-slot">{slot === "lunch" ? "Lunch" : "Dinner"}</span>
+                    {meal ? (
+                      <Link
+                        to={meal.spoonacular_id ? `/recipe/${meal.spoonacular_id}` : `/my-recipe/${meal.saved_meal_id}`}
+                        className="today-meal"
+                      >
+                        {meal.title}
+                      </Link>
+                    ) : (
+                      <button type="button" className="today-empty" onClick={() => openChooser(todayDay, slot)}>
+                        Nothing planned yet <span>· add something</span>
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {(toBuyCount > 0 || useSoonCount > 0) && (
+          <div className="home-chips">
+            {toBuyCount > 0 && (
+              <Link to={offset === 0 ? "/shopping-list" : `/shopping-list?week=${weekStart}`} className="home-chip">
+                <Icon name="cart" size={15} /> {toBuyCount} left to buy
+              </Link>
+            )}
+            {useSoonCount > 0 && (
+              <Link to="/pantry" className="home-chip is-soon">
+                <Icon name="clock" size={15} /> {useSoonCount} to use soon in your pantry
+              </Link>
+            )}
+          </div>
+        )}
       </section>
 
       <WeekNav offset={offset} goToWeek={goToWeek} goToThisWeek={goToThisWeek} />
@@ -409,7 +496,9 @@ function ThisWeek() {
 
       {error && <div className="error-message glass">{error}</div>}
       {!loading && !error && !preview && meals.length === 0 && (
-        <p className="empty-state">Nothing planned for this week yet. Tap Add on any day to pick from your saved meals.</p>
+        <p className="empty-state">
+          Nothing planned for this week yet. Tap Add on any day to pick from <Link to="/library" className="hero-link">your library</Link>, or let Fill my week suggest some.
+        </p>
       )}
 
       {/* scrolls sideways when the screen is too narrow for 7 columns */}

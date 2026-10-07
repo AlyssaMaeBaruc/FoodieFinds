@@ -3,6 +3,14 @@ import "./Navbar.css";
 import { Link, NavLink } from 'react-router-dom'
 import Icon from './Icon'
 
+// the four sections; on phones they become a bottom tab bar with icons
+const TABS = [
+  { to: "/", label: "This Week", icon: "calendar", end: true },
+  { to: "/shopping-list", label: "Shopping", icon: "cart" },
+  { to: "/pantry", label: "Pantry", icon: "fridge" },
+  { to: "/library", label: "Library", icon: "book" },
+];
+
 export const Navbar = () => {
   return (
     <nav className="navbar">
@@ -11,27 +19,14 @@ export const Navbar = () => {
         <span>Foodie<span className="brand-accent">Finds</span></span>
       </Link>
       <ul className="navbar-list">
-        <li>
-          <NavLink to="/" end className="navbar-link">Home</NavLink>
-        </li>
-        <li>
-          <NavLink to="/this-week" className="navbar-link">
-            <span className="label-long">This Week</span><span className="label-short">Week</span>
-          </NavLink>
-        </li>
-        <li>
-          <NavLink to="/shopping-list" className="navbar-link">
-            <span className="label-long">Shopping List</span><span className="label-short">Shop</span>
-          </NavLink>
-        </li>
-        <li>
-          <NavLink to="/pantry" className="navbar-link">Pantry</NavLink>
-        </li>
-        <li>
-          <NavLink to="/favourites" className="navbar-link">
-            <span className="label-long">My Saved Meals</span><span className="label-short">Saved</span>
-          </NavLink>
-        </li>
+        {TABS.map((tab) => (
+          <li key={tab.to}>
+            <NavLink to={tab.to} end={tab.end} className="navbar-link">
+              <Icon name={tab.icon} size={22} className="navbar-icon" />
+              <span>{tab.label}</span>
+            </NavLink>
+          </li>
+        ))}
       </ul>
     </nav>
   )

@@ -58,7 +58,7 @@ function MealChooser({ target, savedMeals, loading, busy, error, onPick, onClose
 
           {!loading && savedMeals?.length === 0 && (
             <p className="recipe-note">
-              You have no saved meals yet. <Link to="/" className="hero-link" onClick={onClose}>Find recipes</Link> and tap the heart to save some.
+              You have no saved meals yet. <Link to="/library?view=find" className="hero-link" onClick={onClose}>Find recipes</Link> and tap the heart to save some.
             </p>
           )}
           {!loading && savedMeals?.length > 0 && shown.length === 0 && (

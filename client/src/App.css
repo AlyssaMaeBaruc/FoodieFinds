@@ -2915,3 +2915,121 @@ button.grade-badge:hover {
   font-weight: 700;
   color: var(--grade-a);
 }
+
+/* ---------- Landing page (This Week) header ---------- */
+
+.home-hero .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.today-card {
+  max-width: 520px;
+  margin: 22px auto 0;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.today-label {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-hover);
+}
+
+.today-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.today-meals li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.today-slot {
+  flex-shrink: 0;
+  width: 54px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brown-soft);
+}
+
+.today-meal {
+  font-weight: 700;
+  color: var(--brown);
+}
+
+.today-meal:hover {
+  color: var(--accent-hover);
+}
+
+.today-empty {
+  padding: 0;
+  background: none;
+  color: var(--brown-soft);
+  font-size: 0.92rem;
+  font-style: italic;
+  text-align: left;
+}
+
+.today-empty span {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-hover);
+}
+
+.home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.home-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--brown);
+}
+
+.home-chip:hover {
+  border-color: var(--accent);
+}
+
+.home-chip.is-soon {
+  color: var(--accent-hover);
+}
+
+/* Library: My meals / Find new recipes */
+.library-tabs {
+  max-width: 360px;
+  margin: -24px auto 32px;
+}
+
+.link-button {
+  padding: 0;
+  background: none;
+  color: var(--accent-hover);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

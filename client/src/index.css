@@ -98,3 +98,10 @@ a:focus-visible {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* phones: room at the bottom of every page for the tab bar */
+@media (max-width: 760px) {
+  body {
+    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}

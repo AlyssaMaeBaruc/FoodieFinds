@@ -71,41 +71,61 @@
   color: #fff;
 }
 
-/* shorter link names on small screens so all four fit */
-.label-short {
+/* icons only show in the phone tab bar */
+.navbar-icon {
   display: none;
 }
 
+/* phones: logo on top, and the four sections as a tab bar fixed to the bottom of the screen */
 @media (max-width: 760px) {
-  .label-long {
-    display: none;
-  }
-  .label-short {
-    display: inline;
-  }
-}
-
-@media (max-width: 640px) {
+  /* no blur on the top bar here: it would pin the "fixed" tab bar to the top bar instead of the screen */
   .navbar {
+    justify-content: center;
     padding: 10px 16px;
+    background: rgba(251, 244, 236, 0.94);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
-  .navbar-brand {
-    font-size: 0;
-    gap: 0;
-  }
-  .navbar-link {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-  }
-}
 
-/* five links on small phones: a little tighter so they all fit */
-@media (max-width: 420px) {
   .navbar-list {
-    gap: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border: none;
+    border-top: 1px solid var(--hairline);
+    background: rgba(253, 248, 242, 0.88);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    box-shadow: 0 -6px 24px rgba(63, 38, 24, 0.08);
   }
+
   .navbar-link {
-    padding: 7px 9px;
-    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 4px 6px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+  }
+
+  .navbar-icon {
+    display: block;
+  }
+
+  .navbar-link:hover {
+    background: transparent;
+  }
+
+  .navbar-link.active {
+    background: var(--brown);
+    color: #fff;
   }
 }

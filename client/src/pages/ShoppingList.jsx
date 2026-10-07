@@ -293,7 +293,7 @@ function ShoppingList() {
             )}
           </div>
           {nothingPlanned ? (
-            <Link to={offset === 0 ? "/this-week" : `/this-week?week=${weekStart}`} className="btn btn-ghost">
+            <Link to={offset === 0 ? "/" : `/?week=${weekStart}`} className="btn btn-ghost">
               <Icon name="calendar" size={16} /> Plan meals
             </Link>
           ) : (

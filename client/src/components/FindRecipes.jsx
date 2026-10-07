@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import RecipesList from '../components/RecipesList'; // Adjust the import path based on your project structure
+import RecipesList from './RecipesList';
 import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from '../spoonacular';
-import Icon from '../components/Icon';
+import Icon from './Icon';
 
 // cuisines Spoonacular's recipe search can filter by
 const CUISINES = [
@@ -14,7 +14,8 @@ const CUISINES = [
 // recipes per page of results (each search or "Load more" costs about 1 quota point)
 const PAGE_SIZE = 24;
 
-function Homepage() {
+// Library > "Find new recipes": search Spoonacular by ingredients and cuisine, heart to save
+function FindRecipes() {
 
   const apiUrl = `${SPOONACULAR_BASE_URL}/recipes/complexSearch`;
   const apiKey = SPOONACULAR_API_KEY;
@@ -181,10 +182,11 @@ function Homepage() {
 
 
   return (
-    <main className="page">
+    <>
     <section className="hero">
       <p className="eyebrow">Pantry-first recipes</p>
       <h1 className="hero-title">Find meals with <span>your ingredients</span></h1>
+      <p className="hero-text">Add what you have, pick a cuisine if you like, and tap the heart on anything you'd cook.</p>
     </section>
 
     <form className="search-form glass" onSubmit={addNewIngredients}>
@@ -259,9 +261,9 @@ function Homepage() {
         {searching ? "Loading…" : <>Load more recipes <Icon name="arrowRight" size={16} /></>}
       </button>
     )}
-    </main>
+    </>
 
   )
 }
 
-export default Homepage
+export default FindRecipes

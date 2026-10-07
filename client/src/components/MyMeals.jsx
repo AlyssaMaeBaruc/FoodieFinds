@@ -1,16 +1,17 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import RecipesList from '../components/RecipesList'; 
-import AddToWeekPicker from '../components/AddToWeekPicker';
-import AddRecipeDialog from '../components/AddRecipeDialog';
-import TagEditor from '../components/TagEditor';
-import GradeBadge from '../components/GradeBadge';
-import GradePicker from '../components/GradePicker';
-import Icon from '../components/Icon';
+import RecipesList from './RecipesList';
+import AddToWeekPicker from './AddToWeekPicker';
+import AddRecipeDialog from './AddRecipeDialog';
+import TagEditor from './TagEditor';
+import GradeBadge from './GradeBadge';
+import GradePicker from './GradePicker';
+import Icon from './Icon';
 
 
-function FavouriteMeals() {
+// Library > "My meals": saved and custom recipes, with tags, grades and select mode
+function MyMeals({ onFindRecipes }) {
 
     const [mealList, setMealList] = useState([]);
     // "Add recipe" pop-up
@@ -128,11 +129,11 @@ fetch("/api/recipes")
       };
 
       return (
-        <main className="page">
+        <>
         <section className="hero">
           <p className="eyebrow">Your collection</p>
-          <h1 className="hero-title">My <span>saved meals</span></h1>
-          <p className="hero-text">Here, you'll find all your favourite dishes waiting for you. Happy Cooking! 😊</p>
+          <h1 className="hero-title">My <span>meals</span></h1>
+          <p className="hero-text">Everything you've saved or added yourself, ready to plan into your week. Happy cooking!</p>
           <button className="btn btn-accent hero-action" onClick={() => setAdding(true)}>
             <Icon name="plus" size={16} /> Add recipe
           </button>
@@ -179,7 +180,11 @@ fetch("/api/recipes")
           </div>
         )}
         {error && <div className="error-message glass"><Icon name="alert" size={18} /> {error}</div>}
-        {mealList.length === 0 && <p className="empty-state">No saved meals yet. Tap the heart on any recipe, or add your own with Add recipe.</p>}
+        {mealList.length === 0 && (
+          <p className="empty-state">
+            No saved meals yet. <button type="button" className="link-button" onClick={onFindRecipes}>Find new recipes</button> and tap the heart, or add your own with Add recipe.
+          </p>
+        )}
         {/* i transferred all of this to the components recipeslist as im using the same logic */}
           {/* <div >
             {mealList.map((meal, index) => (
@@ -214,8 +219,8 @@ fetch("/api/recipes")
               onClose={() => setAdding(false)}
               onSaved={() => { setAdding(false); listOfSavedMeals(); }}
             />
-        </main>
+        </>
       );
     }
       
-export default FavouriteMeals
+export default MyMeals
