@@ -8,6 +8,8 @@ const { isPantryBasic } = require('../model/pantryBasics');
 const { SpoonacularError } = require('../model/spoonacular');
 const { withGrade, HEALTH_COLUMNS, HEALTH_JOIN } = require('../model/healthGrade');
 const { loadRules } = require('../model/weeklyRules');
+const { loadPantry } = require('../model/pantry');
+const { pantryItemFor } = require('../model/pantrySuggest');
 
 const SLOTS = ['lunch', 'dinner'];
 
@@ -142,9 +144,11 @@ router.post('/suggest', async function (req, res) {
     // ingredients for every saved meal (cached; only new Spoonacular recipes cost points)
     const ingredients = await ingredientsForMeals(saved.data);
     // read after the ingredients, which may have just fetched a new recipe's score
-    const [scores, rules] = await Promise.all([
+    const [scores, rules, pantry] = await Promise.all([
       db(`SELECT sm.id, ${HEALTH_COLUMNS} FROM saved_meals sm ${HEALTH_JOIN};`),
       loadRules(),
+      // the pantry is a bonus: without it (e.g. migration 009 not run) suggestions still work
+      loadPantry().catch(() => []),
     ]);
     const grades = new Map(scores.data.map((row) => [row.id, withGrade(row).grade]));
     const library = saved.data.map((meal) => {
@@ -160,6 +164,13 @@ router.post('/suggest', async function (req, res) {
         minutes: info.minutes,
         grade: grades.get(meal.id) ?? null,
       };
+    });
+    // which of each meal's ingredients you already have (pantry basics are already left out)
+    library.forEach((meal) => {
+      meal.pantry = meal.ingredients
+        .map((name) => ({ name, item: pantryItemFor(name, pantry) }))
+        .filter(({ item }) => item)
+        .map(({ name, item }) => ({ name, use_soon: item.use_soon }));
     });
     const goodGoal = rules.min_good_grades;
 

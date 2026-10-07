@@ -477,6 +477,13 @@ function ThisWeek() {
                         {suggestion.added.length ? `New: ${suggestion.added.slice(0, 3).join(", ")}${suggestion.added.length > 3 ? "…" : ""}` : "Nothing new to buy"}
                         {suggestion.minutes ? ` · ${suggestion.minutes} min` : ""}
                       </p>
+                      {suggestion.from_pantry?.length > 0 && (
+                        <p className="suggest-pantry" title="Already in your pantry">
+                          <Icon name={suggestion.from_pantry.some((p) => p.use_soon) ? "clock" : "check"} size={12} />
+                          Uses your {suggestion.from_pantry.map((p) => p.name).slice(0, 2).join(", ")}
+                          {suggestion.from_pantry.length > 2 ? "…" : ""}
+                        </p>
+                      )}
                     </RecipeCard>
                   ) : preview ? (
                     <div className="slot-empty">{offset === 0 && day.date < today ? "Past" : "No suggestion"}</div>

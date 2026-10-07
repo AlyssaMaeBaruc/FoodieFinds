@@ -3,6 +3,7 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists pantry_ideas_cache;
 DROP TABLE if exists pantry_items;
 DROP TABLE if exists ingredient_search_cache;
 DROP TABLE if exists weekly_rules;
@@ -157,4 +158,12 @@ CREATE TABLE ingredient_search_cache (
     query VARCHAR(100) PRIMARY KEY,
     results JSON NOT NULL,
     searched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+-- "What can I make?" ideas from Spoonacular, saved per pantry (pantry_hash = sha256 of pantry_key)
+CREATE TABLE pantry_ideas_cache (
+    pantry_key VARCHAR(2000) NOT NULL,
+    pantry_hash CHAR(64) PRIMARY KEY,
+    results JSON NOT NULL,
+    fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

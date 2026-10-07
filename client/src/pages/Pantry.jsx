@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "../components/Icon";
+import WhatCanIMake from "../components/WhatCanIMake";
 
 const LOCATIONS = [
   { id: "fridge", label: "Fridge", icon: "fridge", hint: "Fresh and chilled" },
@@ -166,6 +167,8 @@ function Pantry() {
     .filter((item) => item.location === location)
     .sort((a, b) => Number(b.use_soon) - Number(a.use_soon) || a.name.localeCompare(b.name));
   const useSoonCount = (items ?? []).filter((item) => item.use_soon).length;
+  // changes when anything is added, removed or marked "use soon", so suggestions reload
+  const pantryKey = (items ?? []).map((item) => `${item.id}${item.use_soon ? "*" : ""}`).sort().join(",");
   const showTypedOption = !picked && query.trim().length >= 2 && !searching
     && !results.some((r) => r.name === query.trim().toLowerCase());
 
@@ -328,6 +331,7 @@ function Pantry() {
           })}
         </div>
       )}
+      {items !== null && <WhatCanIMake pantryKey={pantryKey} pantrySize={items.length} />}
     </main>
   );
 }

@@ -14,6 +14,12 @@ const WEIGHTS = {
   lastWeek: -1.5,      // meal was planned the week before
   // health grade: a nudge towards healthier meals (never outweighs sharing ingredients)
   grade: { A: 0.6, B: 0.3, C: 0, D: -0.3, E: -0.6 },
+  // pantry: per ingredient you already have (up to max), and more for "Use soon" items
+  // (a "Use soon" item only counts for the first meal that uses it in the week)
+  pantry: 0.3,
+  pantryMax: 0.9,
+  useSoon: 0.8,
+  useSoonMax: 1.6,
 };
 const MAX_USES_PER_WEEK = 2;
 // pick randomly among this many best candidates, favouring the best...
@@ -32,21 +38,30 @@ function easyBonus(meal) {
   return bonus;
 }
 
+// pantry items a meal uses: [{ name, use_soon }] (worked out by the route)
+const pantryOf = (meal) => meal.pantry ?? [];
+
 // how well a meal fits the week so far, plus what it shares and adds
 // weekIngredients: Map of ingredient name -> how many meals in the week use it
 // uses: how many times this meal is already in the week
-function scoreMeal(meal, weekIngredients, uses, lastWeekIds) {
+// soonUsed: "Use soon" items already used by another meal this week
+function scoreMeal(meal, weekIngredients, uses, lastWeekIds, soonUsed = new Set()) {
+  const inPantry = new Set(pantryOf(meal).map((p) => p.name));
   // a repeat only "shares" ingredients that OTHER meals also use (not just its own),
   // and adds nothing new to the shopping list
   const usedByOthers = (name) => (weekIngredients.get(name) ?? 0) - uses > 0;
   const shared = meal.ingredients.filter(usedByOthers);
-  const added = uses > 0 ? [] : meal.ingredients.filter((name) => !weekIngredients.has(name));
+  // things you already have at home aren't "new" (nothing to buy)
+  const added = uses > 0 ? [] : meal.ingredients.filter((name) => !weekIngredients.has(name) && !inPantry.has(name));
   const coverage = meal.ingredients.length > 0 ? shared.length / meal.ingredients.length : 0;
 
   let score = WEIGHTS.coverage * coverage + WEIGHTS.newIngredient * added.length + easyBonus(meal);
   if (uses > 0) score += WEIGHTS.repeat;
   if (lastWeekIds.has(meal.saved_meal_id)) score += WEIGHTS.lastWeek;
   score += WEIGHTS.grade[meal.grade] ?? 0;
+  const freshSoon = pantryOf(meal).filter((p) => p.use_soon && !soonUsed.has(p.name));
+  score += Math.min(WEIGHTS.pantryMax, WEIGHTS.pantry * inPantry.size);
+  score += Math.min(WEIGHTS.useSoonMax, WEIGHTS.useSoon * freshSoon.length);
   return { score, shared, added };
 }
 
@@ -75,6 +90,7 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
   const byId = new Map(library.map((meal) => [meal.saved_meal_id, meal]));
   const isGood = (id) => isGoodGrade(byId.get(id)?.grade);
   let goodCount = 0;
+  const soonUsed = new Set();
   const uses = new Map();
   const weekIngredients = new Map();
   // date -> meal ids on that day, so a meal is never eaten twice the same day
@@ -82,6 +98,7 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
   const addToWeek = (id, date) => {
     uses.set(id, (uses.get(id) ?? 0) + 1);
     if (isGood(id)) goodCount += 1;
+    for (const p of pantryOf(byId.get(id) ?? {})) if (p.use_soon) soonUsed.add(p.name);
     for (const name of byId.get(id)?.ingredients ?? []) weekIngredients.set(name, (weekIngredients.get(name) ?? 0) + 1);
     if (!byDate.has(date)) byDate.set(date, new Set());
     byDate.get(date).add(id);
@@ -103,7 +120,7 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
       if (good.length > 0) candidates = good;
     }
     const scored = candidates
-      .map((meal) => ({ meal, ...scoreMeal(meal, weekIngredients, uses.get(meal.saved_meal_id) ?? 0, lastWeekIds) }))
+      .map((meal) => ({ meal, ...scoreMeal(meal, weekIngredients, uses.get(meal.saved_meal_id) ?? 0, lastWeekIds, soonUsed) }))
       .sort((a, b) => b.score - a.score);
 
     if (scored.length === 0) {
@@ -124,6 +141,7 @@ function fillWeek({ library, fixed, slots, lastWeekIds = new Set(), avoidIds = n
       repeat: (uses.get(choice.meal.saved_meal_id) ?? 0) > 0,
       from_last_week: lastWeekIds.has(choice.meal.saved_meal_id),
       grade: choice.meal.grade ?? null,
+      from_pantry: pantryOf(choice.meal),
     });
     addToWeek(choice.meal.saved_meal_id, slot.plan_date);
   });

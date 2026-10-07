@@ -1,9 +1,19 @@
 var express = require('express');
 var router = express.Router();
 const db = require('../model/helper');
-const { SpoonacularError } = require('../model/spoonacular');
+const crypto = require('crypto');
+const { spoonacular, SpoonacularError } = require('../model/spoonacular');
 const { loadPantry, addToPantry, searchIngredients } = require('../model/pantry');
 const { LOCATIONS } = require('../model/pantryMatch');
+const { libraryMatches, rankIdeas } = require('../model/pantrySuggest');
+const { ingredientsForMeals } = require('../model/recipeIngredients');
+const { withGrade, HEALTH_COLUMNS, HEALTH_JOIN } = require('../model/healthGrade');
+
+const IDEAS_COUNT = 10;
+
+// the pantry as one text: changes whenever an item is added, removed or marked "use soon"
+const pantryKey = (pantry) => pantry.map((p) => `${p.match_name}${p.use_soon ? '*' : ''}`).sort().join(',');
+const hashOf = (text) => crypto.createHash('sha256').update(text).digest('hex');
 
 function sendError(res, err, what) {
   if (err instanceof SpoonacularError) return res.status(err.status).send({ message: err.message });
@@ -28,6 +38,74 @@ router.get('/search', async function (req, res) {
     res.send(await searchIngredients(query, await loadPantry()));
   } catch (err) {
     sendError(res, err, 'searching ingredients');
+  }
+});
+
+// WHAT CAN I MAKE (from your library): { ready: [...], almost: [...] }, 0 points
+// (ingredients come from the cache; only a newly saved Spoonacular recipe is fetched once)
+router.get('/suggestions', async function (req, res) {
+  try {
+    const [pantry, saved] = await Promise.all([
+      loadPantry(),
+      db(`SELECT sm.id, sm.title, sm.image, sm.spoonacular_id, sm.is_custom, ${HEALTH_COLUMNS}
+          FROM saved_meals sm ${HEALTH_JOIN};`),
+    ]);
+    if (pantry.length === 0 || saved.data.length === 0) return res.send({ ready: [], almost: [], pantry_size: pantry.length });
+    const ingredients = await ingredientsForMeals(saved.data);
+    const library = saved.data.map((meal) => {
+      const { grade } = withGrade(meal);
+      return {
+        id: meal.id,
+        title: meal.title,
+        image: meal.image,
+        spoonacular_id: meal.spoonacular_id,
+        is_custom: Boolean(meal.is_custom),
+        grade,
+        ingredients: ingredients.get(meal.id)?.names ?? [],
+      };
+    });
+    res.send({ ...libraryMatches(library, pantry), pantry_size: pantry.length });
+  } catch (err) {
+    sendError(res, err, 'finding meals you can make');
+  }
+});
+
+// NEW IDEAS FROM SPOONACULAR for this pantry: { ideas: [...] | null, saved: bool }
+// ?fetch=1 asks Spoonacular (about 1 point) when there's no saved answer for this exact pantry;
+// without it, only a saved answer is returned (free)
+router.get('/ideas', async function (req, res) {
+  try {
+    const pantry = await loadPantry();
+    if (pantry.length === 0) return res.send({ ideas: [], saved: false });
+    const key = pantryKey(pantry);
+    const hash = hashOf(key);
+
+    const cached = await db('SELECT results FROM pantry_ideas_cache WHERE pantry_hash = ?;', [hash]);
+    let found = cached.data[0]?.results;
+    if (typeof found === 'string') found = JSON.parse(found);
+    const fromCache = Boolean(found);
+    if (!found) {
+      if (req.query.fetch !== '1') return res.send({ ideas: null, saved: false });
+      // "use soon" items first, so Spoonacular weighs them in
+      const names = [...pantry].sort((a, b) => Number(b.use_soon) - Number(a.use_soon)).map((p) => p.name);
+      found = await spoonacular('/recipes/findByIngredients', {
+        query: { ingredients: names.join(','), number: IDEAS_COUNT, ranking: 1, ignorePantry: true },
+        timeoutMs: 15000,
+      });
+      await db(
+        `INSERT INTO pantry_ideas_cache (pantry_key, pantry_hash, results) VALUES (?, ?, ?) AS new
+         ON DUPLICATE KEY UPDATE results = new.results, fetched_at = NOW();`,
+        [key.slice(0, 2000), hash, JSON.stringify(found)]
+      );
+    }
+
+    // recipes already in your library are left out
+    const saved = await db('SELECT spoonacular_id FROM saved_meals WHERE spoonacular_id IS NOT NULL;');
+    const savedIds = new Set(saved.data.map((row) => row.spoonacular_id));
+    const ideas = rankIdeas(found, pantry).filter((idea) => !savedIds.has(idea.spoonacular_id));
+    res.send({ ideas, saved: fromCache });
+  } catch (err) {
+    sendError(res, err, 'finding new ideas');
   }
 });
 

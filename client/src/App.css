@@ -2821,3 +2821,97 @@ button.grade-badge:hover {
   border-color: var(--accent);
   color: var(--accent-hover);
 }
+
+/* ---------- What can I make? (Pantry page) ---------- */
+
+.make-section {
+  max-width: 1100px;
+  margin: 40px auto 0;
+  text-align: left;
+}
+
+.make-title {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.make-title span {
+  color: var(--accent);
+}
+
+.make-intro {
+  margin: 0 auto 18px;
+  max-width: 560px;
+  font-size: 0.9rem;
+  color: var(--brown-soft);
+  text-align: center;
+}
+
+.make-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.make-empty {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--brown-soft);
+}
+
+.make-grid {
+  margin-top: 0;
+}
+
+.ideas-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.uses-line {
+  font-weight: 600;
+  color: var(--brown);
+}
+
+.uses-soon {
+  color: var(--accent-hover);
+}
+
+.uses-soon .icon {
+  margin-right: 2px;
+  vertical-align: -1px;
+}
+
+.missing-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 0 6px 6px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--accent-hover);
+}
+
+.missing-line .icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.suggest-pantry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--grade-a);
+}
