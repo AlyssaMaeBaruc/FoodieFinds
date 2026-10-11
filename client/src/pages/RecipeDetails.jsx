@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from "../spoonacular";
 import Icon from "../components/Icon";
 import { getInstructionSections } from "../instructions";
 
@@ -16,12 +15,12 @@ function RecipeDetails() {
   useEffect(() => {
     setRecipe(null);
     setError(null);
-    fetch(`${SPOONACULAR_BASE_URL}/recipes/${id}/information?apiKey=${SPOONACULAR_API_KEY}&includeNutrition=false`)
-      .then((response) => {
-        // 402 = daily Spoonacular limit used up
-        if (response.status === 402) throw new Error("Daily recipe limit reached. Please try again tomorrow.");
-        if (!response.ok) throw new Error("Couldn't load this recipe. Please try again later.");
-        return response.json();
+    // through the server, which saves each recipe so opening it again is free
+    fetch(`/api/recipes/info/${id}`)
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || "Couldn't load this recipe. Please try again later.");
+        return data;
       })
       .then((data) => setRecipe(data))
       .catch((error) => {

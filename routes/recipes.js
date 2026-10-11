@@ -4,6 +4,45 @@ const db = require('../model/helper');
 const { suggestTagsForMeals, tagsByMeal } = require('../model/mealTags');
 const { fillMissingHealthScores } = require('../model/healthScores');
 const { GRADES, withGrade, HEALTH_COLUMNS, HEALTH_JOIN } = require('../model/healthGrade');
+const { searchRecipes, recipeInfo } = require('../model/recipeSearch');
+const { ingredientsForMeals } = require('../model/recipeIngredients');
+const { SpoonacularError } = require('../model/spoonacular');
+const { CUISINES } = require('../model/cuisines');
+
+// Spoonacular problems (daily limit, timeouts) have a message that's safe to show
+function sendSpoonacularError(res, err, what) {
+  if (err instanceof SpoonacularError) return res.status(err.status).send({ message: err.message });
+  console.error(`Error ${what}`, err);
+  res.status(500).send({ message: `Something went wrong ${what}. Please try again.` });
+}
+
+// SEARCH SPOONACULAR: ?q=salmon (by name) and/or ?ingredients=spinach,feta, ?cuisine=Greek, ?offset=24
+// about 1 point per new search; the same search again comes from the database for free
+router.get('/search', async function (req, res) {
+  const query = String(req.query.q ?? '').trim().slice(0, 100);
+  const ingredients = String(req.query.ingredients ?? '').split(',').map((i) => i.trim()).filter(Boolean).slice(0, 20);
+  const cuisine = CUISINES.includes(req.query.cuisine) ? req.query.cuisine : '';
+  const offset = Math.max(0, Math.min(900, Number.parseInt(req.query.offset, 10) || 0));
+  if (!query && ingredients.length === 0 && !cuisine) {
+    return res.status(400).send({ message: 'Type a recipe name, add an ingredient or pick a cuisine first.' });
+  }
+  try {
+    res.send(await searchRecipes({ query, ingredients, cuisine, offset }));
+  } catch (err) {
+    sendSpoonacularError(res, err, 'searching recipes');
+  }
+});
+
+// ONE SPOONACULAR RECIPE'S DETAILS (recipe page), saved for next time
+router.get('/info/:id', async function (req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).send({ message: 'That recipe id is not valid' });
+  try {
+    res.send(await recipeInfo(id));
+  } catch (err) {
+    sendSpoonacularError(res, err, 'loading the recipe');
+  }
+});
 
 // every saved meal with its health score (Spoonacular's, or estimated for custom recipes)
 const savedMealsWithScores = () => db(
@@ -32,12 +71,18 @@ if (!Number.isInteger(spoonacular_id)) {
 }
 
 // placeholders (?) let titles with quotes in them save safely
-await db("INSERT INTO saved_meals (title, image, spoonacular_id) VALUES (?, ?, ?);", [title, image, spoonacular_id]);
-res.status(200).send({message: 'Meal have been saved'});
+// SELECT sends back the new meal's id, so it can be planned straight away
+const result = await db(
+  "INSERT INTO saved_meals (title, image, spoonacular_id) VALUES (?, ?, ?); SELECT LAST_INSERT_ID() AS id;",
+  [title, image, spoonacular_id]
+);
+const idRow = result.data.find((r) => Array.isArray(r))?.[0];
+res.status(200).send({ message: 'Meal have been saved', id: idRow ? Number(idRow.id) : null });
 } catch (err) {
-  // spoonacular_id is UNIQUE, so saving the same recipe again lands here
+  // spoonacular_id is UNIQUE, so saving the same recipe again lands here (with its existing id)
   if (err.code === 'ER_DUP_ENTRY') {
-    return res.status(409).send({ message: 'Meal is already saved' });
+    const existing = await db("SELECT id FROM saved_meals WHERE spoonacular_id = ?;", [req.body.spoonacular_id]).catch(() => ({ data: [] }));
+    return res.status(409).send({ message: 'Meal is already saved', id: existing.data[0]?.id ?? null });
   }
 console.error('Error on saving recipe', err);
   res.status(500).send(err);
@@ -76,7 +121,18 @@ router.get("/", async function(req, res, next) {
   } catch (err) {
     console.error('Error loading health grades', err);
   }
-  res.send(meals.map((meal) => ({ ...meal, tags: tags.get(meal.id) ?? [] })));
+  // ingredient names, so the library can be searched by ingredient (from the cache: free)
+  let ingredients = new Map();
+  try {
+    ingredients = await ingredientsForMeals(meals);
+  } catch (err) {
+    console.error('Error loading meal ingredients', err.message ?? err);
+  }
+  res.send(meals.map((meal) => ({
+    ...meal,
+    tags: tags.get(meal.id) ?? [],
+    ingredient_names: ingredients.get(meal.id)?.names ?? [],
+  })));
 });
 
 // SET OR CLEAR A MEAL'S GRADE: { grade: "A".."E" } or { grade: null } to use Spoonacular's again

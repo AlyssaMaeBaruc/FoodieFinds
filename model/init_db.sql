@@ -3,6 +3,8 @@
 --
 
 SET foreign_key_checks = 0;
+DROP TABLE if exists recipe_search_cache;
+DROP TABLE if exists recipe_info_cache;
 DROP TABLE if exists pantry_ideas_cache;
 DROP TABLE if exists pantry_items;
 DROP TABLE if exists ingredient_search_cache;
@@ -165,5 +167,20 @@ CREATE TABLE pantry_ideas_cache (
     pantry_key VARCHAR(2000) NOT NULL,
     pantry_hash CHAR(64) PRIMARY KEY,
     results JSON NOT NULL,
+    fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+-- saved Spoonacular answers: recipe searches, and recipe pages
+CREATE TABLE recipe_search_cache (
+    search_hash CHAR(64) PRIMARY KEY,
+    search_key VARCHAR(1000) NOT NULL,
+    results JSON NOT NULL,
+    total_results INT NOT NULL,
+    fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+CREATE TABLE recipe_info_cache (
+    spoonacular_id INT PRIMARY KEY,
+    data JSON NOT NULL,
     fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

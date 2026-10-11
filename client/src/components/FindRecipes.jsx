@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import RecipesList from './RecipesList';
-import { SPOONACULAR_BASE_URL, SPOONACULAR_API_KEY } from '../spoonacular';
 import Icon from './Icon';
+import { sentenceCase } from '../text';
 
-// cuisines Spoonacular's recipe search can filter by
+// cuisines Spoonacular's recipe search can filter by (the server checks them against model/cuisines.js)
 const CUISINES = [
   "African", "American", "Asian", "British", "Cajun", "Caribbean", "Chinese",
   "Eastern European", "European", "French", "German", "Greek", "Indian", "Irish",
@@ -11,14 +11,10 @@ const CUISINES = [
   "Mexican", "Middle Eastern", "Nordic", "Southern", "Spanish", "Thai", "Vietnamese",
 ];
 
-// recipes per page of results (each search or "Load more" costs about 1 quota point)
-const PAGE_SIZE = 24;
+// each new search or "Load more" costs about 1 point; the same search again is free (saved on the server)
 
 // Library > "Find new recipes": search Spoonacular by ingredients and cuisine, heart to save
 function FindRecipes() {
-
-  const apiUrl = `${SPOONACULAR_BASE_URL}/recipes/complexSearch`;
-  const apiKey = SPOONACULAR_API_KEY;
 
   // this is for the users to input their ingredients 
   const [ingredientsInput, setIngredientsInput] = useState("");
@@ -64,13 +60,11 @@ function FindRecipes() {
   // escape regex characters so ingredients like "half & half" match literally
   const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // asks Spoonacular whether the typed ingredient exists.
+  // asks the server (Spoonacular's ingredient list, saved per search) whether the typed ingredient exists.
   // valid when it appears as a whole word in a known ingredient ("chicken" matches "chicken leg"),
   // so typos like "chiken" or "banan" are rejected; close matches come back as suggestions
   async function checkIngredient(ingredient) {
-    const response = await fetch(
-      `${SPOONACULAR_BASE_URL}/food/ingredients/autocomplete?apiKey=${apiKey}&number=5&query=${encodeURIComponent(ingredient)}`
-    );
+    const response = await fetch(`/api/pantry/search?q=${encodeURIComponent(ingredient)}`);
     if (!response.ok) throw new Error("Couldn't check that ingredient. Please try again.");
     const matches = (await response.json()).map((match) => match.name);
     const wholeWord = new RegExp(`(^|\\s)${escapeRegExp(ingredient)}(\\s|$)`, "i");
@@ -146,23 +140,16 @@ function FindRecipes() {
 
 // searches Spoonacular's full recipe database; offset > 0 adds the next page ("Load more")
   const getRecipes = async (search, offset) => {
-    const params = new URLSearchParams({ apiKey, number: PAGE_SIZE, offset });
-    if (search.ingredients.length > 0) {
-      params.set("includeIngredients", search.ingredients.join(","));
-      // recipes using the most of your ingredients first
-      params.set("sort", "max-used-ingredients");
-    } else {
-      params.set("sort", "popularity");
-    }
+    const params = new URLSearchParams({ offset });
+    if (search.ingredients.length > 0) params.set("ingredients", search.ingredients.join(","));
     if (search.cuisine) params.set("cuisine", search.cuisine);
 
     setSearching(true);
     setError(null);
     try {
-      const response = await fetch(`${apiUrl}?${params}`);
-      if (response.status === 402) throw new Error("Daily recipe limit reached. Please try again tomorrow.");
-      if (!response.ok) throw new Error("Couldn't search recipes right now. Please try again later.");
-      const data = await response.json();
+      const response = await fetch(`/api/recipes/search?${params}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Couldn't search recipes right now. Please try again later.");
 
       if (offset === 0 && data.results.length === 0) {
         setRecipes([]);
@@ -189,10 +176,12 @@ function FindRecipes() {
       <p className="hero-text">Add what you have, pick a cuisine if you like, and tap the heart on anything you'd cook.</p>
     </section>
 
-    <form className="search-form glass" onSubmit={addNewIngredients}>
-      <Icon name="search" size={20} className="search-icon" />
-      <input name="text" type="text" className="search-bar" placeholder="Enter your ingredients" value={ingredientsInput} onChange={handleChange} />
-      <button type="submit" className="btn" disabled={checkingIngredient}>
+    <form className="search-form" onSubmit={addNewIngredients}>
+      <span className="search-field">
+        <Icon name="search" size={18} className="search-icon" />
+        <input name="text" type="text" className="search-bar" placeholder="Add an ingredient, e.g. garlic" aria-label="Add an ingredient" value={ingredientsInput} onChange={handleChange} />
+      </span>
+      <button type="submit" className="btn btn-ghost" disabled={checkingIngredient}>
         {checkingIngredient ? "Checking…" : <><Icon name="plus" size={16} /> Add</>}
       </button>
     </form>
@@ -205,7 +194,7 @@ function FindRecipes() {
             <span>Did you mean:</span>
             {suggestions.map((name) => (
               <button key={name} type="button" className="suggestion" onClick={() => addIngredient(name)}>
-                {name}
+                {sentenceCase(name)}
               </button>
             ))}
           </div>
@@ -215,8 +204,8 @@ function FindRecipes() {
 
     <ul className="chips">
       {addedIngredients.map((ingredient, index) => (
-        <li key={index} className="chip glass">
-          {ingredient}
+        <li key={index} className="chip">
+          {sentenceCase(ingredient)}
           <button
             className="chip-remove"
             aria-label={`Remove ${ingredient}`}

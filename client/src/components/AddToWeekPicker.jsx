@@ -7,8 +7,10 @@ const WEEKS = [
   { offset: 1, label: "Next week" },
 ];
 
-// "Add to week" button that opens a week + day + lunch/dinner picker inside a saved meal card
-function AddToWeekPicker({ meal }) {
+// "Add to week" button that opens a week + day + lunch/dinner picker inside a meal card.
+// meal: a saved meal ({ id }), or a recipe not saved yet (no id) with ensureSaved() -> its new id
+// onAdded(): after it's been planned (e.g. to refresh the week)
+function AddToWeekPicker({ meal, ensureSaved, onAdded }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = getWeekDays(addWeeks(new Date(), weekOffset));
   const [open, setOpen] = useState(false);
@@ -38,10 +40,12 @@ function AddToWeekPicker({ meal }) {
     setSaving(true);
     setError(null);
     try {
+      // a recipe from a search is saved to the library first
+      const savedMealId = meal.id ?? (await ensureSaved());
       const response = await fetch("/api/meal-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ saved_meal_id: meal.id, plan_date: date, slot, replace }),
+        body: JSON.stringify({ saved_meal_id: savedMealId, plan_date: date, slot, replace }),
       });
       const data = await response.json().catch(() => ({}));
 
@@ -55,6 +59,7 @@ function AddToWeekPicker({ meal }) {
       setMessage(alreadyThere ? `Already planned for ${slotLabel()}` : `Added to ${slotLabel()}`);
       setConflict(null);
       setOpen(false);
+      onAdded?.();
     } catch (err) {
       setError(err.message);
       console.error(err);

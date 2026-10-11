@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import MealChooser from "../components/MealChooser";
+import MealSearch from "../components/MealSearch";
+import { saveToLibrary } from "../library";
 import Icon from "../components/Icon";
 import GradeBadge from "../components/GradeBadge";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
@@ -86,6 +88,25 @@ function ThisWeek() {
       .catch(() => current && setUseSoonCount(null));
     return () => { current = false; };
   }, [weekStart, reloadKey]);
+
+  // the health grades card is folded away behind a chip; remembered per browser
+  const [showHealth, setShowHealth] = useState(() => {
+    try {
+      return localStorage.getItem("foodiefinds-show-health") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleHealth = () => {
+    setShowHealth((open) => {
+      try {
+        localStorage.setItem("foodiefinds-show-health", open ? "0" : "1");
+      } catch {
+        // private browsing: it just won't be remembered
+      }
+      return !open;
+    });
+  };
 
   // weekly rules (the same for every week): { min_good_grades: { value, enabled } }
   const [rules, setRules] = useState(null);
@@ -205,6 +226,21 @@ function ThisWeek() {
       setChooserError(err.message);
       console.error(err);
     } finally {
+      setAdding(false);
+    }
+  };
+
+  // a Spoonacular recipe picked in the "+ Add" pop-up: save it to the library, then plan it
+  const addNewToSlot = async (recipe) => {
+    setAdding(true);
+    setChooserError(null);
+    try {
+      const id = await saveToLibrary(recipe);
+      // the saved meals list reloads next time the pop-up opens, with this recipe in it
+      setSavedMeals(null);
+      await addToSlot({ id });
+    } catch (err) {
+      setChooserError(err.message);
       setAdding(false);
     }
   };
@@ -372,8 +408,21 @@ function ThisWeek() {
           </div>
         )}
 
-        {(toBuyCount > 0 || useSoonCount > 0) && (
+        {!loading && (
           <div className="home-chips">
+            <button
+              type="button"
+              className={`home-chip health-chip${showHealth ? " is-open" : ""}${goalReached ? " is-reached" : ""}`}
+              onClick={toggleHealth}
+              aria-expanded={showHealth}
+              aria-controls="week-health"
+              title={showHealth ? "Hide health grades" : "Show health grades and the weekly rule"}
+            >
+              <GradeBadge grade="A" inline />
+              {plannedGood + suggestedGood} A/B {plannedGood + suggestedGood === 1 ? "meal" : "meals"}
+              {goodGoal?.enabled && <span className="health-chip-goal">{goalReached && <Icon name="check" size={12} />} goal {goodGoal.value}</span>}
+              <Icon name="arrowRight" size={13} className="health-chip-chevron" />
+            </button>
             {toBuyCount > 0 && (
               <Link to={offset === 0 ? "/shopping-list" : `/shopping-list?week=${weekStart}`} className="home-chip">
                 <Icon name="cart" size={15} /> {toBuyCount} left to buy
@@ -390,8 +439,10 @@ function ThisWeek() {
 
       <WeekNav offset={offset} goToWeek={goToWeek} goToThisWeek={goToThisWeek} />
 
-      {!loading && (
-        <section className="week-health glass">
+      <MealSearch onPlanned={() => setReloadKey((k) => k + 1)} />
+
+      {!loading && showHealth && (
+        <section id="week-health" className="week-health glass">
           <p className="week-mix">
             <strong>{plannedGood} A/B {plannedGood === 1 ? "meal" : "meals"}</strong> this week
             {preview && suggestedGood > 0 && <> · <strong>{plannedGood + suggestedGood}</strong> with suggestions</>}
@@ -410,11 +461,8 @@ function ThisWeek() {
             </ul>
           )}
 
-          <details className="rules-drawer">
-            <summary className="rules-summary">
-              Weekly rules
-              <Icon name="arrowRight" size={14} className="drawer-chevron" />
-            </summary>
+          <div className="rules-drawer">
+            <p className="rules-summary">Weekly rule</p>
             {goodGoal && (
               <div className="rule-row">
                 <label className="rule-switch">
@@ -447,7 +495,7 @@ function ThisWeek() {
             )}
             <p className="rule-hint">Fill my week always prefers healthier meals; with this rule on, it makes sure the week reaches the goal.</p>
             {rulesError && <p className="picker-error">{rulesError}</p>}
-          </details>
+          </div>
         </section>
       )}
 
@@ -601,6 +649,7 @@ function ThisWeek() {
         busy={adding}
         error={chooserError}
         onPick={addToSlot}
+        onPickNew={addNewToSlot}
         onClose={() => setChooserTarget(null)}
       />
     </main>
