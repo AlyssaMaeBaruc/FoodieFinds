@@ -1,0 +1,78 @@
+:root {
+  /* colour */
+  --ff-ink: #210F04;
+  --ff-brown: #452103;
+  --ff-oxblood: #690500;
+  --ff-copper: #934B00;
+  --ff-amber: #BB6B00;
+  --ff-cream: #FBF4EA;
+  --ff-tan: #F3E2CC;
+  --ff-glass: rgba(251, 244, 234, 0.62);
+  --ff-glass-edge: rgba(251, 244, 234, 0.75);
+  --ff-overlay: linear-gradient(rgba(33, 15, 4, 0.45), rgba(33, 15, 4, 0.65));
+
+  /* gradients: blends of the palette only, no new colours */
+  --ff-gradient-page:
+    radial-gradient(60rem 40rem at 0% -10%, color-mix(in srgb, var(--ff-amber) 22%, transparent), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 0%, color-mix(in srgb, var(--ff-copper) 16%, transparent), transparent 60%),
+    radial-gradient(50rem 40rem at 85% 100%, color-mix(in srgb, var(--ff-amber) 14%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--ff-cream) 0%, var(--ff-tan) 100%);
+  /* light backgrounds, dark text on top */
+  --ff-gradient-hero: linear-gradient(135deg, var(--ff-cream) 0%, var(--ff-tan) 60%, color-mix(in srgb, var(--ff-amber) 22%, var(--ff-tan)) 100%);
+  --ff-gradient-primary: linear-gradient(135deg, color-mix(in srgb, var(--ff-amber) 22%, var(--ff-tan)) 0%, color-mix(in srgb, var(--ff-amber) 55%, var(--ff-tan)) 100%);
+  --ff-gradient-accent: linear-gradient(90deg, var(--ff-copper), var(--ff-amber));
+  /* accent words in headings: Copper -> copper/amber blend, readable on the light headers */
+  --ff-gradient-title: linear-gradient(90deg, var(--ff-copper), color-mix(in srgb, var(--ff-copper) 50%, var(--ff-amber)));
+
+  /* type */
+  --ff-font-display: 'Fraunces', Georgia, serif;
+  --ff-font-body: 'DM Sans', system-ui, sans-serif;
+
+  /* spacing */
+  --ff-space-1: 4px;
+  --ff-space-2: 8px;
+  --ff-space-3: 12px;
+  --ff-space-4: 16px;
+  --ff-space-5: 24px;
+  --ff-space-6: 32px;
+  --ff-space-7: 48px;
+  --ff-space-8: 64px;
+
+  /* shape */
+  --ff-radius-sm: 12px;
+  --ff-radius-lg: 24px;
+  --ff-radius-xl: 28px;
+  --ff-radius-pill: 999px;
+  --ff-shadow: 0 12px 32px rgba(33, 15, 4, 0.12);
+  --ff-shadow-lift: 0 20px 44px rgba(33, 15, 4, 0.18);
+  /* warm glow under primary buttons and hovered cards */
+  --ff-glow: 0 8px 24px color-mix(in srgb, var(--ff-amber) 24%, transparent);
+  --ff-glow-strong: 0 12px 32px color-mix(in srgb, var(--ff-amber) 34%, transparent);
+
+  /* motion */
+  --ff-fast: 150ms;
+  --ff-base: 250ms;
+}
+
+body {
+  background: var(--ff-gradient-page);
+  background-color: var(--ff-cream);
+  background-attachment: fixed;
+  color: var(--ff-ink);
+  font-family: var(--ff-font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  font-family: var(--ff-font-display);
+  color: var(--ff-brown);
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

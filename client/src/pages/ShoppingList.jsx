@@ -5,11 +5,11 @@ import RecipeImage from "../components/RecipeImage";
 import WeekNav, { useSelectedWeek } from "../components/WeekNav";
 import { parseDateText, weekTitle } from "../week";
 
-// "2026-10-07" + "lunch" -> "Wed Lunch"
+// "2026-10-07" + "lunch" -> "Wed lunch"
 function slotLabel(meal) {
   const date = parseDateText(meal.plan_date);
   const weekday = date ? date.toLocaleDateString("en-GB", { weekday: "short" }) : "";
-  return `${weekday} ${meal.slot.charAt(0).toUpperCase()}${meal.slot.slice(1)}`;
+  return `${weekday} ${meal.slot}`;
 }
 
 // the same recipe planned on several days becomes one entry with its total portions

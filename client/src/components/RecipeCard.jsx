@@ -54,8 +54,9 @@ function RecipeCard({ title, image, spoonacularId, link, onSave, isSaved, compac
             className={`fav-button${isSaved ? " is-saved" : ""}`}
             onClick={onSave}
             disabled={isSaved}
-            aria-label={isSaved ? `${title} saved` : `Save ${title} to favourites`}
-            title={isSaved ? "Saved" : "Save to favourites"}
+            aria-pressed={isSaved}
+            aria-label={`Save ${title}`}
+            title={isSaved ? "Saved to your library" : "Save to your library"}
           >
             <Icon name="heart" size={20} />
           </button>

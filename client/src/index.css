@@ -1,42 +1,19 @@
+/* Base styles. Colours, fonts, spacing, radii and shadows come from styles/tokens.css (DESIGN.md). */
+
+/*
+ * NOT IN THE DESIGN SYSTEM (kept on purpose, see DESIGN.md "ask before adding"):
+ * colours with a meaning the palette has no token for. Listed for the owner to decide.
+ */
 :root {
-  /* palette */
-  --brown: #3f2618;
-  --brown-soft: #7d5f4e;
-  --brown-faint: rgba(63, 38, 24, 0.08);
-  --accent: #e2683a;
-  --accent-hover: #c9552a;
-  --accent-soft: rgba(226, 104, 58, 0.12);
-  --cream: #fbf4ec;
+  /* delete / destructive actions */
   --danger: #b3261e;
 
-  /* health grades A-E */
+  /* health grades A (healthiest) to E: five distinct colours */
   --grade-a: #1e7b3a;
   --grade-b: #7cb93e;
   --grade-c: #f2c12e;
   --grade-d: #ee8a2b;
   --grade-e: #d7392b;
-
-  /* frosted glass surfaces */
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-strong: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.75);
-  --hairline: rgba(63, 38, 24, 0.08);
-  --blur: blur(18px) saturate(140%);
-
-  /* depth */
-  --shadow-sm: 0 1px 2px rgba(63, 38, 24, 0.05), 0 2px 8px rgba(63, 38, 24, 0.05);
-  --shadow: 0 1px 2px rgba(63, 38, 24, 0.04), 0 10px 30px rgba(63, 38, 24, 0.08);
-  --shadow-hover: 0 2px 4px rgba(63, 38, 24, 0.05), 0 18px 44px rgba(63, 38, 24, 0.14);
-
-  --radius-lg: 28px;
-  --radius: 20px;
-  --radius-sm: 14px;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-
-  font-family: "Plus Jakarta Sans", Inter, system-ui, Helvetica, Arial, sans-serif;
-  line-height: 1.55;
-  font-weight: 400;
-  color: var(--brown);
 
   color-scheme: light;
   font-synthesis: none;
@@ -49,17 +26,9 @@
   box-sizing: border-box;
 }
 
-/* soft warm gradient "mesh" behind the frosted glass */
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(48rem 36rem at 8% -8%, rgba(255, 176, 122, 0.55), transparent 62%),
-    radial-gradient(44rem 34rem at 96% 4%, rgba(255, 214, 165, 0.7), transparent 60%),
-    radial-gradient(40rem 34rem at 78% 78%, rgba(244, 152, 110, 0.28), transparent 62%),
-    radial-gradient(44rem 36rem at 6% 96%, rgba(255, 200, 150, 0.45), transparent 60%),
-    var(--cream);
-  background-attachment: fixed;
 }
 
 a {
@@ -68,40 +37,52 @@ a {
 }
 
 button {
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-family: var(--ff-font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
   color: inherit;
   cursor: pointer;
   border: none;
-  border-radius: 999px;
-  transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+  border-radius: var(--ff-radius-sm);
+  transition:
+    background-color var(--ff-fast) ease-out,
+    color var(--ff-fast) ease-out,
+    transform var(--ff-base) ease-out,
+    border-color var(--ff-fast) ease-out;
 }
 
+input,
+select,
+textarea {
+  font-family: var(--ff-font-body);
+}
+
+/* focus: amber outline on everything you can use with the keyboard */
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 2px solid var(--ff-amber);
   outline-offset: 2px;
+}
+
+/* headings beyond the h1-h3 rule in tokens.css */
+h4 {
+  font-family: var(--ff-font-display);
+  color: var(--ff-brown);
+  font-weight: 500;
 }
 
 .icon {
   flex-shrink: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-  }
-}
-
 /* phones: room at the bottom of every page for the tab bar */
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   body {
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--ff-space-8) + var(--ff-space-4) + env(safe-area-inset-bottom));
   }
 }

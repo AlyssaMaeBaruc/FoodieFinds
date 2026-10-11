@@ -8,6 +8,7 @@ import TagEditor from './TagEditor';
 import GradeBadge from './GradeBadge';
 import GradePicker from './GradePicker';
 import Icon from './Icon';
+import { sentenceCase } from '../text';
 
 
 // Library > "My meals": saved and custom recipes, with tags, grades and select mode
@@ -74,7 +75,7 @@ fetch("/api/recipes")
       // tag chips under the title, ending with the button that opens the editor
       const renderTags = (meal) => (
         <span className="card-tags">
-          {(meal.tags ?? []).map((tag) => <span key={tag.id} className="tag-chip">{tag.name}</span>)}
+          {(meal.tags ?? []).map((tag) => <span key={tag.id} className="tag-chip">{sentenceCase(tag.name)}</span>)}
           {!selecting && (
             <button className="tag-edit-button" onClick={() => setEditingMeal(meal)} aria-label={`Edit tags for ${meal.title}`}>
               <Icon name="tag" size={12} /> {meal.tags?.length ? "Edit" : "Add tags"}
@@ -132,7 +133,7 @@ fetch("/api/recipes")
         <>
         <section className="hero">
           <p className="eyebrow">Your collection</p>
-          <h1 className="hero-title">My <span>meals</span></h1>
+          <h1 className="hero-title">My saved <span>meals</span></h1>
           <p className="hero-text">Everything you've saved or added yourself, ready to plan into your week. Happy cooking!</p>
           <button className="btn btn-accent hero-action" onClick={() => setAdding(true)}>
             <Icon name="plus" size={16} /> Add recipe

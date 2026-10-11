@@ -5,7 +5,7 @@ import Icon from './Icon'
 
 // the four sections; on phones they become a bottom tab bar with icons
 const TABS = [
-  { to: "/", label: "This Week", icon: "calendar", end: true },
+  { to: "/", label: "This week", icon: "calendar", end: true },
   { to: "/shopping-list", label: "Shopping", icon: "cart" },
   { to: "/pantry", label: "Pantry", icon: "fridge" },
   { to: "/library", label: "Library", icon: "book" },

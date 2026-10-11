@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
+import { sentenceCase } from '../text';
 
 async function sendJson(url, method, body) {
   const res = await fetch(url, {
@@ -122,7 +123,7 @@ function TagEditor({ meal, tags, onClose, onTagsChanged, onSaved }) {
               return (
                 <li key={tag.id} className={`tag-option${isOn ? " is-on" : ""}${armed ? " is-armed" : ""}`}>
                   <button type="button" className="tag-toggle" aria-pressed={isOn} onClick={() => toggle(tag.id)}>
-                    {isOn && <Icon name="check" size={13} />} {tag.name}
+                    {isOn && <Icon name="check" size={13} />} {sentenceCase(tag.name)}
                   </button>
                   {!tag.is_default && (
                     <button
